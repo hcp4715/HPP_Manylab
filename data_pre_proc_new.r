@@ -218,6 +218,14 @@ nostagliaAlpha <- psych::alpha(valid.mulRaw[,nostagliaNames],
 print(nostagliaAlpha$total)  # std. alpha 0.765, instead of 0.92
 nostagliaItem <- psych::scoreItems(nostagliaKeys,valid.mulRaw[,nostagliaNames],min = 1, max = 7) ## 
 
+# alpha for each site
+for (i in siteName){
+        tmpdf <- valid.mulRaw[valid.mulRaw$Site == i,nostagliaNames]
+        tmpAlpha <- psych::alpha(tmpdf, keys= nostagliaKeys) 
+        sitesAlpha$alphaNostaglia[sitesAlpha$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
+}
+sitesAlpha
+
 ## score and alpha coefficient for ALEX
 didfNames <- c("ALEX1","ALEX2","ALEX3","ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11")
 #didfKeys <- c(1,2,3,-4,5,6,7,8,9,10,11) # original
@@ -235,6 +243,21 @@ mulDatasum$eot <- rowSums(valid.mulRaw[,eotNames],na.rm = T)/length(eotNames) # 
 eotfAlpha <-  psych::alpha(valid.mulRaw[,eotNames], keys=eotKeys)  # calculate the alpha coefficient of eot
 print(eotfAlpha$total)  # print the alpha for eot
 
+# alpha for each site
+for (i in siteName){
+        tmpdf <- valid.mulRaw[valid.mulRaw$Site == i,didfNames]
+        tmpAlpha <- psych::alpha(tmpdf, keys= didfKeys) 
+        sitesAlpha$alphaDIDF[sitesAlpha$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
+}
+sitesAlpha
+
+for (i in siteName){
+        tmpdf <- valid.mulRaw[valid.mulRaw$Site == i,eotNames]
+        tmpAlpha <- psych::alpha(tmpdf, keys= eotKeys) 
+        sitesAlpha$alphaEOT[sitesAlpha$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
+}
+sitesAlpha
+
 ## score and alpha for attachemnt to home
 homeNames <- c( "HOME1","HOME2","HOME3","HOME4","HOME5","HOME6","HOME7","HOME8","HOME9" )
 homeKeys <- c(1,2,3,4,5,6,7,8,9) # reverse coded as negative
@@ -245,20 +268,34 @@ print(homeAlpha$total)  # std. alpha 0.9049, instead of 0.901
 
 homeItem <- psych::scoreItems(homeKeys,valid.mulRaw[,homeNames],min = 1, max = 5) ## 
 
+for (i in siteName){
+        tmpdf <- valid.mulRaw[valid.mulRaw$Site == i,homeNames]
+        tmpAlpha <- psych::alpha(tmpdf, keys= homeKeys) 
+        sitesAlpha$alphaHOme[sitesAlpha$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
+}
+sitesAlpha
+
+
 ## score and alpha for KAMF
+# recode to 1 - 8
 
 kamfNames <- c("KAMF1" ,"KAMF2","KAMF3","KAMF4","KAMF5","KAMF6","KAMF7")
+kamfData <- valid.mulRaw[,kamfNames]
+summary(kamfData)
+kamfData$KAMF1_r <-kamfData$KAMF1*1.75 - 0.75
+kamfData$KAMF3_r <-kamfData$KAMF3*1.166 - 0.166
+kamfNames_r <- c("KAMF1_r" ,"KAMF2","KAMF3_r","KAMF4","KAMF5","KAMF6","KAMF7")
 kamfKeys <- c(1,2,3,4,5,6,7) # reverse coded as negative
 
-kamfAlpha <- psych::alpha(valid.mulRaw[,kamfNames], 
-                          keys=kamfKeys)  # calculate the alpha coefficient 
-print(kamfAlpha$total)  # std. alpha 0.9049, instead of 0.901
+kamfAlpha <- psych::alpha(kamfData[,kamfNames], keys=kamfKeys)  # calculate the alpha coefficient for not re-coded
+print(kamfAlpha$total)
+kamfAlpha_r <- psych::alpha(kamfData[,kamfNames_r], keys=kamfKeys)  # calculate the alpha coefficient 
+print(kamfAlpha_r$total)  # std. alpha 0.9049, instead of 0.901
 
 kamfItem <- psych::scoreItems(kamfKeys,valid.mulRaw[,kamfNames],min = 1, max = 5) ## 
 
 
-##### end ####
-=======
+##### end ###=======
 ## Code accompanying IJzerman et al.
 ## Some of the code below based on http://www.stanford.edu/~stephsus/R-randomforest-guide.pdf, and further modified by Thomas Pollet and Hans IJzerman
 ## Please cite the "Penguin Project" when using this syntax (https://osf.io/2rm5b/)
