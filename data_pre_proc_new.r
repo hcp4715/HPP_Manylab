@@ -62,7 +62,24 @@ mulDatasum$Temperature_t1 <- valid.mulRaw$Temperature_t1
 mulDatasum$Temperature_t2 <- valid.mulRaw$Temperature_t2
 mulDatasum$avgtemp <- (mulDatasum$Temperature_t1 + mulDatasum$Temperature_t2)/2
 
-#### below is the calculating of scale score and aphla coefficient for each scale ####
+#### calculate social network index ####
+## calculate the soical diveristy
+# for social diversity, we re-code the types of relationship into 1 or 0
+# so, Q10, Q12,Q14,Q16,Q18,Q20,Q22,Q24,Q26(combined with Q27), Q28, Q30 were recoded
+SNINames <- c("SNI1","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
+socDivData <- valid.mulRaw[,SNINames]
+library(car)
+# re-code data: NA -> 0; 0 -> 0; 1~10 -> 1
+socDivData_r <- apply(socDivData,2,function(x) {x <- recode(x,"0 = 0; NA = 0; 1:10 = 1;"); x}) 
+socDivData_r <- data.frame(socDivData_r)
+# add suffix to the colnames
+colnames(socDivData_r) <- paste(colnames(socDivData_r),"r",  sep = "_")
+socDivData_r$SNIwork <- socDivData_r$SNI17_r + socDivData_r$SNI18_r
+socDivData_r$SNIwork_r <- recode(socDivData_r$SNIwork,"0 = 0;1:10 = 1")
+SNINames_r <- c("SNI1_r","SNI3_r","SNI5_r","SNI7_r","SNI9_r","SNI11_r","SNI13_r","SNI15_r","SNIwork_r","SNI19_r","SNI21_r")
+socDivData_r$diversity <- rowSums(socDivData_r[,SNINames_r])
+
+        
 ## calculate the complex social integration
 valid.mulRaw$SNI1_r <- valid.mulRaw$SNI1 
 valid.mulRaw$SNI1_r[valid.mulRaw$SNI1_r >= 2] <- 0 # re-code data without spoue as 0
@@ -72,6 +89,8 @@ SNINames <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "
 valid.mulRaw[,SNINames][is.na(valid.mulRaw[,SNINames])] <- 0 # change the NAs to 0,
 
 mulDatasum$CSI <- rowSums(valid.mulRaw[,SNINames])
+
+#### below is the calculating of scale score and aphla coefficient for each scale ####
 
 ## score and alpha for self control scale
 scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
