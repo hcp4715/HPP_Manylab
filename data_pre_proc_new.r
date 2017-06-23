@@ -79,7 +79,55 @@ socDivData_r$SNIwork_r <- recode(socDivData_r$SNIwork,"0 = 0;1:10 = 1")
 SNINames_r <- c("SNI1_r","SNI3_r","SNI5_r","SNI7_r","SNI9_r","SNI11_r","SNI13_r","SNI15_r","SNIwork_r","SNI19_r","SNI21_r")
 socDivData_r$diversity <- rowSums(socDivData_r[,SNINames_r])
 
-        
+# extra groups, 0 --> 0; more than 0 --> 1
+extrDivName <- c("SNI23","SNI24","SNI25","SNI26","SNI27") 
+extrDivData <- valid.mulRaw[,extrDivName]
+# re-code other groups: 0/NA -> 0; else -> 1
+extrDivData_r <- apply(extrDivData,2,function(x) {x <- recode(x,"0 = 0; NA = 0; else = 1"); x}) 
+extrDivData_r <- data.frame(extrDivData_r)
+# sum the other groups
+extrDivData_r$extrDiv <- rowSums(extrDivData_r)
+# re-code other groups again
+extrDivData_r$extrDiv_r <- recode(extrDivData_r$extrDiv,'0 = 0; else = 1')
+
+# add social diversity with other groups
+socDivData_r$diversity_final <- socDivData_r$diversity + extrDivData_r$extrDiv_r
+
+# Social Network size
+socDivData$SNI1_r <- recode(socDivData$SNI1,"1= 1; else = 0")
+SNSizeNames <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
+extrSizeName <- c("SNI28","SNI29","SNI30","SNI31","SNI32")
+extrSizeData <- valid.mulRaw[,extrSizeName]
+extrSizeData_r <- apply(extrSizeData,2,function(x) {x <- recode(x,"0 = 0; NA = 0;1 = 1; 2= 2; 3= 3; 4= 4;5= 5; 6 = 6; else = 7"); x}) 
+extrSizeData_r <- data.frame(extrSizeData_r)
+SNSizeData <- cbind(socDivData,extrSizeData_r)
+SNSizeNames_r <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21",
+                   "SNI28","SNI29","SNI30","SNI31","SNI32")
+SNSizeData$snSize <- rowSums(SNSizeData[,SNSizeNames_r])
+
+## number of embedded networks
+## family: SNI1_r, SNI3,SNI5,SNI7,SNI9 (total >4);
+## friends: SNI11 (>4);
+## Church: SNI13 (>4);
+## Students/school: SNI 15 (>4)
+## Work: SNI17 + SNI 18 >4
+## neighbor: SNI19 >4
+## volunteer SNI21 >4
+## other groups: totoal > 4
+SNSizeData$familyNW <- rowSums(SNSizeData[,c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9")])
+SNSizeData$familyNW_r <- recode(SNSizeData$familyNW,"1:4 = 0; 0 = 0; else = 1")
+SNSizeData$friendNW_r <- recode(SNSizeData$SNI11,"1:4 = 0; 0 = 0; else = 1")
+SNSizeData$churchNW_r <- recode(SNSizeData$SNI13,"1:4 = 0; 0 = 0; else = 1")
+SNSizeData$studyNW_r <- recode(SNSizeData$SNI15,"1:4 = 0; 0 = 0; else = 1")
+SNSizeData$workNW <- SNSizeData$SNI17 + SNSizeData$SNI18 
+SNSizeData$workNW_r <- recode(SNSizeData$workNW,"1:4 = 0; 0 = 0; else = 1")
+SNSizeData$neighbor_r <- recode(SNSizeData$SNI19,"1:4 = 0; 0 = 0; else = 1")
+SNSizeData$volun_r <- recode(SNSizeData$SNI21,"1:4 = 0; 0 = 0; else = 1")
+SNSizeData$extra <- rowSums(SNSizeData[,c("SNI28","SNI29","SNI30","SNI31","SNI32")])
+SNSizeData$extra_r <- recode(SNSizeData$extra,"1:4 = 0; 0 = 0; else = 1")
+SNSizeData$socEmbd <- rowSums(SNSizeData[,c("familyNW_r","friendNW_r","churchNW_r","studyNW_r","workNW_r",
+                                            "neighbor_r","volun_r","extra_r")])
+
 ## calculate the complex social integration
 valid.mulRaw$SNI1_r <- valid.mulRaw$SNI1 
 valid.mulRaw$SNI1_r[valid.mulRaw$SNI1_r >= 2] <- 0 # re-code data without spoue as 0
