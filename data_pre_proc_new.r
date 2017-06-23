@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## Code accompanying IJzerman et al.
 ## Some of the code below based on http://www.stanford.edu/~stephsus/R-randomforest-guide.pdf, and further modified by Thomas Pollet and Hans IJzerman
 ## Please cite the "Penguin Project" when using this syntax (https://osf.io/2rm5b/)
@@ -6,6 +5,8 @@
 
 Sys.setlocale("LC_ALL", "English")  # set local encoding to English
 Sys.setenv(LANG = "en") # set the feedback language to English
+
+rm(list = setdiff(ls(), lsf.str())) # remove all variables except functions
 
 pkgTest <- function(x)
 {
@@ -17,7 +18,7 @@ pkgTest <- function(x)
 }
 
 # packages
-pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice','stargazer',"summarytools","psych"))
+pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice','stargazer',"summarytools","psych","car"))
 
 lapply(pkgNeeded,pkgTest)
 rm('pkgNeeded') # remove the variable 'pkgNeeded';
@@ -66,21 +67,28 @@ mulDatasum$avgtemp <- (mulDatasum$Temperature_t1 + mulDatasum$Temperature_t2)/2
 ## calculate the soical diveristy
 # for social diversity, we re-code the types of relationship into 1 or 0
 # so, Q10, Q12,Q14,Q16,Q18,Q20,Q22,Q24,Q26(combined with Q27), Q28, Q30 were recoded
-SNINames <- c("SNI1","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
-socDivData <- valid.mulRaw[,SNINames]
-library(car)
-# re-code data: NA -> 0; 0 -> 0; 1~10 -> 1
-socDivData_r <- apply(socDivData,2,function(x) {x <- recode(x,"0 = 0; NA = 0; 1:10 = 1;"); x}) 
+SNINames <- c("SNI1","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19",
+              "SNI21","SNI28","SNI29","SNI30","SNI31","SNI32")
+snDivNames <- c("SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19",
+                "SNI21")
+extrDivName <- c("SNI28","SNI29","SNI30","SNI31","SNI32") 
+SNIData <- valid.mulRaw[,SNINames]
+
+# recode Q10
+SNIData$SNI1_r <- recode(SNIData$SNI1,"1= 1; else = 0")
+
+# re-code Q12 ~ Q30: NA -> 0; 0 -> 0; 1~10 -> 1
+socDivData_r <- apply(SNIData[,snDivNames],2,function(x) {x <- recode(x,"0 = 0; NA = 0; 1:10 = 1;"); x}) 
 socDivData_r <- data.frame(socDivData_r)
 # add suffix to the colnames
-colnames(socDivData_r) <- paste(colnames(socDivData_r),"r",  sep = "_")
-socDivData_r$SNIwork <- socDivData_r$SNI17_r + socDivData_r$SNI18_r
+colnames(socDivData_r) <- paste(colnames(socDivData_r),"div",  sep = "_")
+socDivData_r$SNIwork <- socDivData_r$SNI17_div + socDivData_r$SNI18_div   # combine the social network for work
 socDivData_r$SNIwork_r <- recode(socDivData_r$SNIwork,"0 = 0;1:10 = 1")
-SNINames_r <- c("SNI1_r","SNI3_r","SNI5_r","SNI7_r","SNI9_r","SNI11_r","SNI13_r","SNI15_r","SNIwork_r","SNI19_r","SNI21_r")
-socDivData_r$diversity <- rowSums(socDivData_r[,SNINames_r])
+SNIData <- cbind(SNIData, socDivData_r)  # combine by columne of re-coded data
+
 
 # extra groups, 0 --> 0; more than 0 --> 1
-extrDivName <- c("SNI23","SNI24","SNI25","SNI26","SNI27") 
+
 extrDivData <- valid.mulRaw[,extrDivName]
 # re-code other groups: 0/NA -> 0; else -> 1
 extrDivData_r <- apply(extrDivData,2,function(x) {x <- recode(x,"0 = 0; NA = 0; else = 1"); x}) 
@@ -89,21 +97,26 @@ extrDivData_r <- data.frame(extrDivData_r)
 extrDivData_r$extrDiv <- rowSums(extrDivData_r)
 # re-code other groups again
 extrDivData_r$extrDiv_r <- recode(extrDivData_r$extrDiv,'0 = 0; else = 1')
+SNIData$extrDiv_r <- extrDivData_r$extrDiv_r
 
 # add social diversity with other groups
-socDivData_r$diversity_final <- socDivData_r$diversity + extrDivData_r$extrDiv_r
+snDivNames_r <- c("SNI1_r","SNI3_div","SNI5_div","SNI7_div","SNI9_div","SNI11_div","SNI13_div","SNI15_div","SNIwork_r",
+                  "SNI19_div","SNI21_div","extrDiv_r")
+SNIData$SNdiversity <- rowSums(SNIData[,snDivNames_r])
 
 # Social Network size
-socDivData$SNI1_r <- recode(socDivData$SNI1,"1= 1; else = 0")
-SNSizeNames <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
-extrSizeName <- c("SNI28","SNI29","SNI30","SNI31","SNI32")
-extrSizeData <- valid.mulRaw[,extrSizeName]
-extrSizeData_r <- apply(extrSizeData,2,function(x) {x <- recode(x,"0 = 0; NA = 0;1 = 1; 2= 2; 3= 3; 4= 4;5= 5; 6 = 6; else = 7"); x}) 
+snSizeNames <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
+#extrSizeName <- c("SNI28","SNI29","SNI30","SNI31","SNI32")
+#extrSizeData <- valid.mulRaw[,extrSizeName]
+extrSizeData_r <- apply(extrDivData,2,function(x) {x <- recode(x,"0 = 0; NA = 0;1 = 1; 2= 2; 3= 3; 4= 4;5= 5; 6 = 6; else = 7"); x}) 
 extrSizeData_r <- data.frame(extrSizeData_r)
-SNSizeData <- cbind(socDivData,extrSizeData_r)
-SNSizeNames_r <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21",
-                   "SNI28","SNI29","SNI30","SNI31","SNI32")
-SNSizeData$snSize <- rowSums(SNSizeData[,SNSizeNames_r])
+# add suffix to the colnames
+colnames(extrSizeData_r) <- paste(colnames(extrSizeData_r),"sz",  sep = "_")
+
+SNSizeData <- cbind(SNIData,extrSizeData_r)
+SNSizeNames_r <- c("SNI1_r","SNI3", "SNI5", "SNI7", "SNI9" , "SNI11", "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21",
+                   "SNI28_sz","SNI29_sz","SNI30_sz","SNI31_sz","SNI32_sz")
+SNSizeData$snSize <- rowSums(SNSizeData[,SNSizeNames_r],na.rm=TRUE)
 
 ## number of embedded networks
 ## family: SNI1_r, SNI3,SNI5,SNI7,SNI9 (total >4);
@@ -612,6 +625,10 @@ print(kamfAlpha$total)  # std. alpha 0.9049, instead of 0.901
 
 kamfItem <- psych::scoreItems(kamfKeys,valid.mulRaw[,kamfNames],min = 1, max = 5) ## 
 
+## gluctot and artgluctot (already calculated in multi-site dataset)
+#gluctot <- Q89_6_1_TEXT +Q89_7_1_TEXT+Q89_12_1_TEXT
+#artgluctot <- Q89_8_1_TEXT +Q89_9_1_TEXT +Q89_13_1_TEXT
+
 
 ##### end ####
->>>>>>> 6da8f7989dcfa6e80fae9e142009262087180203
+
