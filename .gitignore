@@ -1,5 +1,6 @@
 *.csv
 *.sav
+*.por
 *.RData
 *.Rhistory
 *.Rproj.user/
