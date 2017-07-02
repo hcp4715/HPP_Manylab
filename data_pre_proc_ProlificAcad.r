@@ -24,75 +24,89 @@ rm('pkgNeeded') # remove the variable 'pkgNeeded';
 
 # this belowing code was not used.
 ## to read spss file with duplicated labels, fixed this error from: https://dadoseteorias.wordpress.com/2017/04/29/read-spss-duplicated-levels/
-Int2Factor <- function(x){
-        if(!is.null(attr(x, "value.labels"))){
-                vlab <- attr(x, "value.labels")
-                if(sum(duplicated(vlab)) > 0)
-                        cat("Duplicated levels:", vlab, "\n")
-                else if(sum(duplicated(names(vlab))) > 0)
-                        cat("Duplicated labels:",
-                            names(vlab)[duplicated(names(vlab))], "\n")
-                else
-                        x <- factor(x, levels = as.numeric(vlab),
-                                    labels = names(vlab))
-        }
-        x
-}
+#Int2Factor <- function(x){
+#        if(!is.null(attr(x, "value.labels"))){
+#                vlab <- attr(x, "value.labels")
+#                if(sum(duplicated(vlab)) > 0)
+#                        cat("Duplicated levels:", vlab, "\n")
+#                else if(sum(duplicated(names(vlab))) > 0)
+#                        cat("Duplicated labels:",
+#                            names(vlab)[duplicated(names(vlab))], "\n")
+#                else
+#                        x <- factor(x, levels = as.numeric(vlab),
+#                                    labels = names(vlab))
+#        }
+#        x
+#}
 
-mul_data_raw <- read.spss("HPP_pilot_MTurk_cleaned_deidentified.sav", use.value.labels = FALSE)
-mul_data_raw <- lapply(mul_data_raw, Int2Factor)
-mul_data_raw <- as.data.frame(mul_data_raw, stringsAsFactors = FALSE)
+#mul_data_raw <- read.spss("HPP_pilot_MTurk_cleaned_deidentified.sav", use.value.labels = FALSE)
+#mul_data_raw <- lapply(mul_data_raw, Int2Factor)
+#mul_data_raw <- as.data.frame(mul_data_raw, stringsAsFactors = FALSE)
 
-attach(mul_data_raw)
+#attach(mul_data_raw)
 
-data_spss <- data.frame(as.data.set(spss.portable.file("HPP_pilot_MTurk_cleaned_deidentified.por")))
+#data_spss <- data.frame(as.data.set(spss.portable.file("HPP_pilot_MTurk_cleaned_deidentified.por")))
 
 # I used the following code to read data
-DataRaw <- read.csv("HPP_pilot_PA_deidentified_hcp.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
+DataRaw <- read.csv("prolific_academic_corrected_201512_rev_yjx2_3.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
+
+# define the cleaned data:
+nameSumData <- c("age","anxiety", "attachhome", "attachphone","avghumid", "avgtemp", "avoidance", "glucoseplosone",
+                        "health", "heightm", "Medication", "mintemp","networksize","nostalgia", "selfcontrol", "Sex",
+                        "Site","Smoking", "socialdiversity", "socialembedded", "stress", "weightkg")
 
 # recode the temperature:
-#DataRaw$Temperature_t1 <- if (any(DataRaw$Q8 == 2)) (((DataRaw$Q7-32)*5)/9) else DataRaw$Q7
-DataRaw$Temperature_t1_r <- DataRaw$Q7
-DataRaw$Temperature_t1[DataRaw$Q8 ==2] <- ((DataRaw$Q7[DataRaw$Q8 ==2]-32)*5)/9
-#DataRaw$Temperature_t2 <- if (any(DataRaw$Q66 == 2)) (((DataRaw$Q65-32)*5)/9) else DataRaw$Q65
-DataRaw$Temperature_t2 <- DataRaw$Q65
-DataRaw$Q66[is.na(DataRaw$Q66)] <- 0
-DataRaw$Temperature_t2[DataRaw$Q66== 2] <- ((DataRaw$Q65[DataRaw$Q66 == 2]-32)*5)/9
-DataRaw$avgtemp_r <- rowSums(DataRaw[,c('Temperature_t1','Temperature_t2')],na.rm = T)/2
-DataRaw$avgtemp_r[is.na(DataRaw$Q65)] <- DataRaw$Temperature_t1[is.na(DataRaw$Q65)]
-
 # there was one participants filled 32 for Q7 and 2 for Q8, resulted 0 for t1; however, the results of Q66 was 1, 
 # and again the answer for Q65 was 32. so here I change the answer for Q8 as 1.
 DataRaw$Q8[DataRaw$Q7 == 32 & DataRaw$Q8 == 2] <- 1
 
-DataRaw$Temperature_t1 <- DataRaw$Q7
-DataRaw$Temperature_t1[DataRaw$Q8 ==2] <- ((DataRaw$Q7[DataRaw$Q8 ==2]-32)*5)/9
-#DataRaw$Temperature_t2 <- if (any(DataRaw$Q66 == 2)) (((DataRaw$Q65-32)*5)/9) else DataRaw$Q65
-DataRaw$Temperature_t2 <- DataRaw$Q65
-DataRaw$Q66[is.na(DataRaw$Q66)] <- 0
-DataRaw$Temperature_t2[DataRaw$Q66== 2] <- ((DataRaw$Q65[DataRaw$Q66 == 2]-32)*5)/9
-DataRaw$avgtemp_r <- rowSums(DataRaw[,c('Temperature_t1','Temperature_t2')],na.rm = T)/2
-DataRaw$avgtemp_r[is.na(DataRaw$Q65)] <- DataRaw$Temperature_t1[is.na(DataRaw$Q65)]
+# DataRaw$Temperature_t1_r <- if (any( DataRaw$Q8 == 2)) (((DataRaw$Q7-32)*5)/9) else DataRaw$Q7
+DataRaw$Temperature_t1_r <- DataRaw$Q7
 
-# DataRaw$country_region <- data_spss$country_
+for (ii in 1:length(DataRaw$Q8)){
+        if (DataRaw$Q8[ii] ==2){
+                DataRaw$Temperature_t1_r[ii] <- ((DataRaw$Q7[ii]-32)*5)/9
+        }
+        else DataRaw$Temperature_t1_r[ii] <- DataRaw$Q7[ii]
+}
+
+# DataRaw$Temperature_t2_r <- if (any(DataRaw$Q66 == 2)) (((DataRaw$Q65-32)*5)/9) else DataRaw$Q65
+DataRaw$Temperature_t2_r <- DataRaw$Q65
+DataRaw$Q66r <- DataRaw$Q66
+DataRaw$Q66r[is.na(DataRaw$Q66r)] <- 0
+
+for (ii in 1:length(DataRaw$Q66r)){
+        if (DataRaw$Q66r[ii] ==2){
+                DataRaw$Temperature_t2_r[ii] <- ((DataRaw$Q65[ii]-32)*5)/9
+        }
+        else DataRaw$Temperature_t2_r[ii] <- DataRaw$Q65[ii]
+}
+
+
+DataRaw$avgtemp_r <- rowSums(DataRaw[,c('Temperature_t1_r','Temperature_t2_r')],na.rm = T)/2
+# correct the value for participatn with NA for Q65
+
+DataRaw$avgtemp_r[is.na(DataRaw$Q65)] <- DataRaw$Temperature_t1_r[is.na(DataRaw$Q65)]  
+
 
 # birth year
 DataRaw$birthyear <- as.integer(paste("19",as.character(round(DataRaw$Q87,2)),sep = ''))
 
 
 valid.data <- subset(DataRaw,avgtemp_r > 34.99) # average temperature higher than 34.99 is valid
-valid.data1 <- subset(DataRaw,Temperature_t1 > 34.99)
-valid.data2 <- subset(DataRaw,Temperature_t2 > 34.99)
-valid.data3 <- subset(DataRaw,Temperature_t2 > 34.99 & Temperature_t1 > 34.99 )
+valid.data1 <- subset(DataRaw,Temperature_t1_r > 34.99)
+valid.data2 <- subset(DataRaw,Temperature_t2_r > 34.99)
+valid.data3 <- subset(DataRaw,Temperature_t2_r > 34.99 & Temperature_t1_r > 34.99 )
 
+valid.data$age <- 2014 - valid.data$birthyear # calcuate the age for each participant
 
 ## dataframe for summary data
-Datasum <- valid.data[,c('age','sex')]               # age, sex
+Datasum <- valid.data[,c('age','Sex')]               # age, sex
 Datasum$num <- seq(1:nrow(Datasum))                  # add an index
 Datasum <- Datasum[,c('num','age','sex')]            # re-order the columns
-Datasum$Temperature_t1 <- valid.data$Temperature_t1  # temperature at time point 1
-Datasum$Temperature_t2 <- valid.data$Temperature_t2  # temperature at time point 2
-Datasum$avgtemp <- (Datasum$Temperature_t1 + Datasum$Temperature_t2)/2  # average temperature
+#Datasum$Temperature_t1 <- valid.data$Temperature_t1  # temperature at time point 1
+#Datasum$Temperature_t2 <- valid.data$Temperature_t2  # temperature at time point 2
+Datasum$avgtemp <- valid.data$avgtemp_r  # average temperature
 
 #### calculate social network index ####
 ## calculate the soical diveristy
@@ -133,6 +147,7 @@ SNIData$extrDiv_r <- extrDivData_r$extrDiv_r
 snDivNames_r <- c("SNI1_r","SNI3_div","SNI5_div","SNI7_div","SNI9_div","SNI11_div","SNI13_div","SNI15_div","SNIwork_r",
                   "SNI19_div","SNI21_div","extrDiv_r")
 SNIData$SNdiversity <- rowSums(SNIData[,snDivNames_r])
+# Datasum$diversity <- SNIData$SNdiversity
 
 # Social Network size
 snSizeNames <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
@@ -176,9 +191,8 @@ SNSizeData$socEmbd <- rowSums(SNSizeData[,c("familyNW_r","friendNW_r","churchNW_
                                             "neighbor_r","volun_r","extra_r")])
 
 ## calculate the complex social integration
-Datasum$socialDiversity <- SNIData$SNdiversity # complex social integration
-Datasum$snSize <- SNSizeData$snSize 
-Datasum$socEmbd <- SNSizeData$socEmbd 
+Datasum$socialdiversity <- SNIData$SNdiversity # complex social integration
+Datasum$socialembedded <- SNSizeData$socEmbd 
 
 #### below is the calculating of scale score and aphla coefficient for each scale ####
 
@@ -188,7 +202,7 @@ scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the origina
 # scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13) # in case if the score in this dataset is already reversed
 scontrolAlpha <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
 print(scontrolAlpha$total)  # 0.467!!!!  problematic
-Datasum$scontrol <- rowSums(valid.data[,scontrolNames],na.rm = T)/length(scontrolNames) # average score
+Datasum$selfcontrol <- rowSums(valid.data[,scontrolNames],na.rm = T)/length(scontrolNames) # average score
 
 
 ## score and alpha for perceive stress
@@ -206,10 +220,10 @@ phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone
 phoneAlpha <- psych::alpha(valid.data[,phoneNames], 
                             keys=c(1,2,3,4,5,6,7,8,9))  # calculate the alpha coefficient 
 print(phoneAlpha$total)  # std. alpha 0.8868
-Datasum$phone <- rowSums(valid.data[,phoneNames],na.rm = T)/length(phoneNames) # average score
+Datasum$attachphone <- rowSums(valid.data[,phoneNames],na.rm = T)/length(phoneNames) # average score
 
 
-## score and alpha for online
+## score and alpha for online (No Online for this?)
 onlineNames <- c( "onlineid1", "onlineid2","onlineid3","onlineid4", "onlineid5", "onlineid6","onlineid7","onlineid8",
                  "onlineid9", "onlineid10", "onlineide11")
 onlineAlpha <- psych::alpha(valid.data[,onlineNames], 
@@ -261,7 +275,8 @@ nostagliaKeys <- c(-1,2,3,4,5,6,7) # reverse coded as negative
 nostagliaAlpha <- psych::alpha(valid.data[,nostagliaNames], 
                                keys=nostagliaKeys)  # calculate the alpha coefficient 
 print(nostagliaAlpha$total)  # std. alpha 0.765, instead of 0.92
-nostagliaItem <- psych::scoreItems(nostagliaKeys,valid.data[,nostagliaNames],min = 1, max = 7) ## 
+#nostagliaItem <- psych::scoreItems(nostagliaKeys,valid.data[,nostagliaNames],min = 1, max = 7) ## 
+Datasum$nostalgia <- rowSums(valid.data[,nostagliaNames],na.rm = T)/length(nostagliaNames) 
 
 ## score and alpha coefficient for ALEX
 didfNames <- c("ALEX1","ALEX2","ALEX3","ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11")
@@ -272,11 +287,11 @@ eotNames <- c("ALEX12","ALEX13","ALEX14","ALEX15" ,"ALEX16")
 eotKeys <- c(-1,2,-3,4,-5) # original
 # eotKeys <- c(1,2,3,4,5) # in case the score is already re-coded
 
-Datasum$didf <- rowSums(valid.data[,didfNames],na.rm = T)/length(didfNames) # average score
+#Datasum$didf <- rowSums(valid.data[,didfNames],na.rm = T)/length(didfNames) # average score
 didfAlpha <-  psych::alpha(valid.data[,didfNames], keys=didfKeys)  # calculate the alpha coefficient of DIDF
 print(didfAlpha$total)  # print the alpha for DIDF
 
-Datasum$eot <- rowSums(valid.data[,eotNames],na.rm = T)/length(eotNames) # average score
+#Datasum$eot <- rowSums(valid.data[,eotNames],na.rm = T)/length(eotNames) # average score
 eotfAlpha <-  psych::alpha(valid.data[,eotNames], keys=eotKeys)  # calculate the alpha coefficient of eot
 print(eotfAlpha$total)  # print the alpha for eot
 
@@ -287,11 +302,17 @@ homeKeys <- c(1,2,3,4,5,6,7,8,9) # reverse coded as negative
 homeAlpha <- psych::alpha(valid.data[,homeNames], 
                                keys=homeKeys)  # calculate the alpha coefficient 
 print(homeAlpha$total)  # std. alpha 0.9049, instead of 0.901
+Datasum$attachhome <- rowSums(valid.data[,homeNames],na.rm = T)/length(homeNames)
 
 ## gluctot and artgluctot (already calculated in multi-site dataset)
-Datasum$gluctot <- rowSums(valid.data[,c("Q89_6_1_TEXT",'Q89_7_1_TEXT','Q89_12_1_TEXT')],na.rm = T)
-Datasum$artgluctot <- rowSums(valid.data[,c("Q89_8_1_TEXT",'Q89_9_1_TEXT','Q89_13_1_TEXT')],na.rm = T)
-
-
+Datasum$glucoseplosone <- rowSums(valid.data[,c("Q89_6_1_TEXT",'Q89_7_1_TEXT','Q89_12_1_TEXT')],na.rm = T)
+#Datasum$artgluctot <- rowSums(valid.data[,c("Q89_8_1_TEXT",'Q89_9_1_TEXT','Q89_13_1_TEXT')],na.rm = T)
+Datasum$Site <- "ProlificAcademic"
+Datasum$heightm <- valid.data$heightm
+Datasum$weightkg <- valid.data$weightkg
+Datasum$health <- valid.data$health
+Datasum$avghumid <- NA
+Datasum$Medication <- valid.data$meds
+Datasum$mintemp <- NA
 ##### end ####
 
