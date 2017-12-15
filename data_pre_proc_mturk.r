@@ -1,4 +1,4 @@
-## Code for pre-processing the pilot data form m-turk
+#### Code for pre-processing the pilot data form m-turk
 
 Sys.setlocale("LC_ALL", "English")  # set local encoding to English
 Sys.setenv(LANG = "en")             # 
