@@ -1,7 +1,40 @@
-#### Code for pre-processing the pilot data form m-turk
+#### Code_pre-proc_MTurk####
+### Purpose ###
+# Pre-processing the data from pilot data from m-Turk as reported in IJzerman et al.(2018), Human Penguin Project (HPP).
+# Overview of HPP: https://osf.io/2rm5b/ 
+#
+# Code author: Chuan-Peng Hu, PhD, 
+# Affliated to: Neuroimaging Center, Johannes Gutenberg University Medical Center, 55131 Mainz, Germany;
+# Also to: Department of Psychology, Tsinghua Univeristy, 100084 Beijing, China.
+# Email: hcp4715@gmail.com
+# 
+### data report in the article ####
+# N = 143; excluded 3;
+# 
+### Variables ####
+# stress         -- Perceived stress (Cohen & Wills, 1985)
+# nostalgia      -- (Routledge et al., 2008)
+# attachhome     -- attachment to home; Harris et al., 1996
+# selfcontrol    -- self-control, Tangney et al., 2004
+# avoidance      -- subscale of attachment, Fraley et al., 2000
+# anxiety        -- subscale of attachment, Fraley et al., 2000
+# EOT            -- alexithymia subscale; Kooiman et al., 2002
+# DIDF           -- alexithymia subscale; Kooiman et al., 2002
+# networksize    -- social network; Cohen et al., 1997
+# socialembedded -- social network; Cohen et al., 1997
+# CSI            -- complex social integration, social network; Cohen et al., 1997
+# gluctot        -- daily sugary drink consumption, Henriksen et al., 2014
+# artgluctot     -- diet drinks consumption, Henriksen et al., 2014 
+# sex            -- sex
+# height         -- height
+# weight         -- wightkg
+# mintemp        -- minimum temperature of the day
+# avghumidity    -- average humidity of the day
+#
+### code for pre-processing ####
 
 Sys.setlocale("LC_ALL", "English")  # set local encoding to English
-Sys.setenv(LANG = "en")             # 
+Sys.setenv(LANG = "en")             # set language to Egnlish
 
 rm(list = setdiff(ls(), lsf.str())) # remove all variables except functions
 
@@ -16,7 +49,8 @@ pkgTest <- function(x)
 }
 
 # packages needed
-pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice','stargazer',"summarytools","psych","car",'memisc'))
+pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice',
+                'stargazer',"summarytools","psych","car",'memisc'))
 
 lapply(pkgNeeded,pkgTest)   # require needed packages
 rm('pkgNeeded') # remove the variable 'pkgNeeded';
@@ -138,7 +172,7 @@ scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the origina
 # scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13) # in case if the score in this dataset is already reversed
 scontrolAlpha <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
 print(scontrolAlpha$total)    #
-Datasum$selfcontrol <- rowSums(valid.data[,scontrolNames],na.rm = T)/length(scontrolNames) # average score
+Datasum$selfcontrol <- rowSums(valid.data[,scontrolNames],na.rm = T)/length(scontrolNames) # average score,need revision!!
 
 
 ## score and alpha for perceive stress
