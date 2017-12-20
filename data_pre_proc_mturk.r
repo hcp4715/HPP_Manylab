@@ -194,7 +194,10 @@ stressKeys <- c(1,2,3,-4,-5,-6,-7,8,-9,-10,11,12,-13,14) # original key for reve
 stressAlpha <- psych::alpha(valid.data[,stressNames], keys = stressKeys)  # calculate the alpha coefficient 
 print(stressAlpha$total)  # std. alpha: 0.8985846
 
-Datasum$stress <- rowSums(valid.data[,stressNames],na.rm = T)/length(stressNames) # average score
+Datasum$stress <- (valid.data$stress1 + valid.data$stress2 + valid.data$stress3 + (5 - valid.data$stress4)
+                   + (5 - valid.data$stress5) + (5 - valid.data$stress6) + (5 - valid.data$stress7) + valid.data$stress8
+                   + (5 - valid.data$stress9) + (5 - valid.data$stress10) + valid.data$stress11 + valid.data$stress12
+                   + (5 - valid.data$stress13)+ valid.data$stress14)/length(stressNames) # average score
 
 ## score and alpha for attach phone
 phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone7","phone8","phone9" )
