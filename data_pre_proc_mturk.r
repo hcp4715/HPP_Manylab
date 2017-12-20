@@ -73,13 +73,13 @@ valid.data2 <- subset(DataRaw,Temperature_t2 > 34.99)   # just another try
 valid.data3 <- subset(DataRaw,Temperature_t2 > 34.99 & Temperature_t1 > 34.99 ) # just another try
 
 
-## create the dataframe for summary data
+## create the dataframe for summary data that can be used for later use
 Datasum <- valid.data[,c('age','sex')]               # age, sex
 colnames(Datasum)[colnames(Datasum) == 'sex'] <- 'Sex'
 Datasum$avgtemp <- (valid.data$Temperature_t1 + valid.data$Temperature_t2)/2  # average temperature
 
 #### calculate social network index ####
-## calculate the soical diveristy
+## soical diveristy 
 # for social diversity, we re-code the types of relationship into 1 or 0
 # so, Q10, Q12,Q14,Q16,Q18,Q20,Q22,Q24,Q26(combined with Q27), Q28, Q30 were car::recoded
 SNINames <- c("SNI1","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19",
@@ -169,11 +169,21 @@ Datasum$socialembedded <- SNSizeData$socEmbd
 ## score and alpha for self control scale
 scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
 scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the original scale with reverse coding
+# scontrolKeys2 <- list(c(1,-1,-1,-1,-1,1,-1,1,-1,-1,1,-1,-1)) #  this is the original scale with reverse coding
+# scontrolNames2 <- list(c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
+#                   "scontrol8", "-scontrol9", "-scontrol10", "scontrol11","-scontrol12", "-scontrol13" ))
 # scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13) # in case if the score in this dataset is already reversed
-scontrolAlpha <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
-print(scontrolAlpha$total)    #
-Datasum$selfcontrol <- rowSums(valid.data[,scontrolNames],na.rm = T)/length(scontrolNames) # average score,need revision!!
 
+scontrolAlpha <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
+print(scontrolAlpha$total)    # std. alpha: 0.8784647
+
+# tmpSelfControl <- psych::scoreItems(scontrolKeys2,valid.data[,scontrolNames],totals = T, min = 1, max = 5)
+
+# average score, using the most simple way
+Datasum$selfcontrol <- (valid.data$scontrol1 + (5 - valid.data$scontrol2) + (5 - valid.data$scontrol3) + (5 - valid.data$scontrol4)
+                        + (5 - valid.data$scontrol5) + valid.data$scontrol6 + (5 - valid.data$scontrol7) + valid.data$scontrol8
+                        + (5 - valid.data$scontrol9) + (5 - valid.data$scontrol10) + valid.data$scontrol11 + (5 - valid.data$scontrol12)
+                        + (5 - valid.data$scontrol13))/length(scontrolNames) 
 
 ## score and alpha for perceive stress
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", "stress9", "stress10",
