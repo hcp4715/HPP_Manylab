@@ -192,7 +192,8 @@ stressKeys <- c(1,2,3,-4,-5,-6,-7,8,-9,-10,11,12,-13,14) # original key for reve
 # stressKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14)        # in case the score is already re-coded
 
 stressAlpha <- psych::alpha(valid.data[,stressNames], keys = stressKeys)  # calculate the alpha coefficient 
-print(stressAlpha$total)  # 0.6778  Not right
+print(stressAlpha$total)  # std. alpha: 0.8985846
+
 Datasum$stress <- rowSums(valid.data[,stressNames],na.rm = T)/length(stressNames) # average score
 
 ## score and alpha for attach phone
