@@ -55,6 +55,15 @@ pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice',
 lapply(pkgNeeded,pkgTest)   # require needed packages
 rm('pkgNeeded') # remove the variable 'pkgNeeded';
 
+#### A small function for score ####
+# not finished
+scoreSurvey <- function(data, keys, min, max, total = TRUE){
+        newData <- sweep(data,MARGIN = 2,keys,'*') # multiple each column with it key
+        newData <- if (any(newData < 0)) (newData + min + max) else newData
+        
+}
+
+#### begin the pre-processing ####
 # load the spss file for the country information
 data_spss <- data.frame(as.data.set(spss.portable.file("HPP_pilot_MTurk_cleaned_deidentified.por")))
 
@@ -170,34 +179,40 @@ Datasum$socialembedded <- SNSizeData$socEmbd
 scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
 scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the original scale with reverse coding
 # scontrolKeys2 <- list(c(1,-1,-1,-1,-1,1,-1,1,-1,-1,1,-1,-1)) #  this is the original scale with reverse coding
-# scontrolNames2 <- list(c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
-#                   "scontrol8", "-scontrol9", "-scontrol10", "scontrol11","-scontrol12", "-scontrol13" ))
+scontrolKeys2 <- list(c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
+                   "scontrol8", "-scontrol9", "-scontrol10", "scontrol11","-scontrol12", "-scontrol13" ))
 # scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13) # in case if the score in this dataset is already reversed
 
 scontrolAlpha <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
 print(scontrolAlpha$total)    # std. alpha: 0.8784647
 
-# tmpSelfControl <- psych::scoreItems(scontrolKeys2,valid.data[,scontrolNames],totals = T, min = 1, max = 5)
+SelfControlScore <- psych::scoreItems(scontrolKeys2,valid.data[,scontrolNames], min = 1, max = 5)
+print(SelfControlScore$alpha)
 
 # average score, using the most simple way
-Datasum$selfcontrol <- (valid.data$scontrol1 + (5 - valid.data$scontrol2) + (5 - valid.data$scontrol3) + (5 - valid.data$scontrol4)
-                        + (5 - valid.data$scontrol5) + valid.data$scontrol6 + (5 - valid.data$scontrol7) + valid.data$scontrol8
-                        + (5 - valid.data$scontrol9) + (5 - valid.data$scontrol10) + valid.data$scontrol11 + (5 - valid.data$scontrol12)
-                        + (5 - valid.data$scontrol13))/length(scontrolNames) 
+# Datasum$selfcontrol <- (valid.data$scontrol1 + (6 - valid.data$scontrol2) + (6 - valid.data$scontrol3) + (6 - valid.data$scontrol4)
+#                         + (6 - valid.data$scontrol5) + valid.data$scontrol6 + (6 - valid.data$scontrol7) + valid.data$scontrol8
+#                        + (6 - valid.data$scontrol9) + (6 - valid.data$scontrol10) + valid.data$scontrol11 + (6 - valid.data$scontrol12)
+#                        + (6 - valid.data$scontrol13))/length(scontrolNames) 
+Datasum$selfcontrol <- SelfControlScore$scores
 
 ## score and alpha for perceive stress
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", "stress9", "stress10",
                  "stress11", "stress12", "stress13", "stress14")
 stressKeys <- c(1,2,3,-4,-5,-6,-7,8,-9,-10,11,12,-13,14) # original key for reverse coding
+stressKeys2 <- list(c("stress1" , "stress2" ,"stress3","-stress4", "-stress5", "-stress6", "-stress7", "stress8",
+                 "-stress9", "-stress10","stress11", "stress12", "-stress13", "stress14"))
 # stressKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14)        # in case the score is already re-coded
 
 stressAlpha <- psych::alpha(valid.data[,stressNames], keys = stressKeys)  # calculate the alpha coefficient 
 print(stressAlpha$total)  # std. alpha: 0.8985846
 
-Datasum$stress <- (valid.data$stress1 + valid.data$stress2 + valid.data$stress3 + (5 - valid.data$stress4)
-                   + (5 - valid.data$stress5) + (5 - valid.data$stress6) + (5 - valid.data$stress7) + valid.data$stress8
-                   + (5 - valid.data$stress9) + (5 - valid.data$stress10) + valid.data$stress11 + valid.data$stress12
-                   + (5 - valid.data$stress13)+ valid.data$stress14)/length(stressNames) # average score
+stressScore <- psych::scoreItems(stressKeys2,valid.data[,stressNames],min = 1, max = 5)
+# Datasum$stress <- (valid.data$stress1 + valid.data$stress2 + valid.data$stress3 + (6 - valid.data$stress4)
+#                    + (6 - valid.data$stress5) + (6 - valid.data$stress6) + (6 - valid.data$stress7) + valid.data$stress8
+#                    + (6 - valid.data$stress9) + (6 - valid.data$stress10) + valid.data$stress11 + valid.data$stress12
+#                    + (6 - valid.data$stress13)+ valid.data$stress14)/length(stressNames) # average score
+Datasum$stress <- stressScore$scores
 
 ## score and alpha for attach phone
 phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone7","phone8","phone9" )
