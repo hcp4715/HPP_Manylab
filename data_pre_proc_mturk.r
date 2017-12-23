@@ -1,17 +1,33 @@
-#### Code_pre-proc_MTurk####
+#### Code_pre-proc_MTurk_HPP####
+#
 ### Purpose ###
 # Pre-processing the data from pilot data from m-Turk as reported in IJzerman et al.(2018), Human Penguin Project (HPP).
 # Overview of HPP: https://osf.io/2rm5b/ 
+# 
 #
 # Code author: Chuan-Peng Hu, PhD, 
-# Affliated to: Neuroimaging Center, Johannes Gutenberg University Medical Center, 55131 Mainz, Germany;
-# Also to: Department of Psychology, Tsinghua Univeristy, 100084 Beijing, China.
+# Affliated to: Neuroimaging Center (NIC), Johannes Gutenberg University Medical Center, 55131 Mainz, Germany;
 # Email: hcp4715@gmail.com
 # 
-### data report in the article ####
-# N = 143; excluded 3;
+# Author      Date       Notes/Changes
+# ========   =========   ========
+# C-P. Hu    23/12/17    add comparison between results here and reported in article
+#
+#
+### input data ####
+#
+# Oringinal data: sav file: 'Core_Temperature_Study__Improved_MTurk total.sav' 
+#
+# Revised data: 'HPP_MTurk_cleaned.csv' (with codebook 'Codebook_HPP_mTurk_0613.xlsx')
+#
 # 
-### Variables ####
+### output file and Variables ####
+#
+# output file: 'summary_pilot_MTurk.csv'
+# 
+# including following variables:
+# Age
+# Sex 
 # stress         -- Perceived stress (Cohen & Wills, 1985)
 # nostalgia      -- (Routledge et al., 2008)
 # attachhome     -- attachment to home; Harris et al., 1996
@@ -25,14 +41,33 @@
 # CSI            -- complex social integration, social network; Cohen et al., 1997
 # gluctot        -- daily sugary drink consumption, Henriksen et al., 2014
 # artgluctot     -- diet drinks consumption, Henriksen et al., 2014 
-# sex            -- sex
 # height         -- height
 # weight         -- wightkg
 # mintemp        -- minimum temperature of the day
 # avghumidity    -- average humidity of the day
 #
-### code for pre-processing ####
-
+### final Note ####
+#
+# This script is largely based on spss syntax file 'Syntax to Calculate Scales and Reliabilities.sps'
+#
+#### compare results in article and here ####
+#
+# Items         In Article      Output of this script
+# ============  ===========     ========================
+# valid data    140(excluded 3) 141 (no exclusion)
+# selfcontrol                   0.8784647
+# stress                        0.8985846
+# attachphone                   0.8993025
+# onlineid                      0.9109445
+# ECR-total                     0.953831
+# ECR-anxiety                   0.9286249
+# ECR-avoidance                 0.9578632
+# nostalgia                     0.9433518
+# Alex-didf                     0.9139629
+# Alex-eot                      0.5731632
+# attachhome                    0.8815955
+#
+### Preparing ####
 Sys.setlocale("LC_ALL", "English")  # set local encoding to English
 Sys.setenv(LANG = "en")             # set language to Egnlish
 
@@ -55,19 +90,11 @@ pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice',
 lapply(pkgNeeded,pkgTest)   # require needed packages
 rm('pkgNeeded') # remove the variable 'pkgNeeded';
 
-#### A small function for score ####
-# not finished
-scoreSurvey <- function(data, keys, min, max, total = TRUE){
-        newData <- sweep(data,MARGIN = 2,keys,'*') # multiple each column with it key
-        newData <- if (any(newData < 0)) (newData + min + max) else newData
-        
-}
-
-#### begin the pre-processing ####
-# load the spss file for the country information
+#### Begin the pre-processing ####
+# load the spss file for the country information, the '.por' file is transferred from '.sav' file
 data_spss <- data.frame(as.data.set(spss.portable.file("HPP_pilot_MTurk_cleaned_deidentified.por")))
 
-# I used the following code to read data
+# Read data
 DataRaw <- read.csv("HPP_MTurk_cleaned.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
 
 # recode the temperature:
@@ -77,10 +104,9 @@ DataRaw$country_region <- data_spss$country_  # get the country information
 rm(data_spss)  # remove the spss data
 
 valid.data <- subset(DataRaw,avgtemp > 34.99) # average temperature higher than 34.99 is valid
-valid.data1 <- subset(DataRaw,Temperature_t1 > 34.99)   # just another try, not used in following analysis
-valid.data2 <- subset(DataRaw,Temperature_t2 > 34.99)   # just another try
-valid.data3 <- subset(DataRaw,Temperature_t2 > 34.99 & Temperature_t1 > 34.99 ) # just another try
-
+#valid.data1 <- subset(DataRaw,Temperature_t1 > 34.99)   # just another try, not used in following analysis
+#valid.data2 <- subset(DataRaw,Temperature_t2 > 34.99)   # just another try
+#valid.data3 <- subset(DataRaw,Temperature_t2 > 34.99 & Temperature_t1 > 34.99 ) # just another try
 
 ## create the dataframe for summary data that can be used for later use
 Datasum <- valid.data[,c('age','sex')]               # age, sex
@@ -175,7 +201,7 @@ Datasum$socialembedded <- SNSizeData$socEmbd
 
 #### below is the calculating of scale score and aphla coefficient for each scale ####
 
-## score and alpha for self control scale
+#### score and alpha for self control scale ####
 scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
 scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the original scale with reverse coding
 # scontrolKeys2 <- list(c(1,-1,-1,-1,-1,1,-1,1,-1,-1,1,-1,-1)) #  this is the original scale with reverse coding
@@ -196,7 +222,7 @@ print(SelfControlScore$alpha)
 #                        + (6 - valid.data$scontrol13))/length(scontrolNames) 
 Datasum$selfcontrol <- SelfControlScore$scores
 
-## score and alpha for perceive stress
+## score and alpha for perceive stress ####
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", "stress9", "stress10",
                  "stress11", "stress12", "stress13", "stress14")
 stressKeys <- c(1,2,3,-4,-5,-6,-7,8,-9,-10,11,12,-13,14) # original key for reverse coding
@@ -214,15 +240,14 @@ stressScore <- psych::scoreItems(stressKeys2,valid.data[,stressNames],min = 1, m
 #                    + (6 - valid.data$stress13)+ valid.data$stress14)/length(stressNames) # average score
 Datasum$stress <- stressScore$scores
 
-## score and alpha for attach phone
+## score and alpha for attach phone ####
 phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone7","phone8","phone9" )
 phoneAlpha <- psych::alpha(valid.data[,phoneNames], 
                             keys=c(1,2,3,4,5,6,7,8,9))  # calculate the alpha coefficient 
-print(phoneAlpha$total)  # std. alpha 0.9
+print(phoneAlpha$total)  # std. alpha 0.899
 Datasum$attachphone <- rowSums(valid.data[,phoneNames],na.rm = T)/length(phoneNames) # average score
 
-
-## score and alpha for online, not in Han's Pilot data
+## score and alpha for online ####
 onlineNames <- c( "onlineid1", "onlineid2","onlineid3","onlineid4", "onlineid5", "onlineid6","onlineid7","onlineid8",
                  "onlineid9", "onlineid10", "onlineide11")
 onlineAlpha <- psych::alpha(valid.data[,onlineNames], 
@@ -230,7 +255,7 @@ onlineAlpha <- psych::alpha(valid.data[,onlineNames],
 print(onlineAlpha$total)  # std. alpha 0.91
 Datasum$online <- rowSums(valid.data[,onlineNames],na.rm = T)/length(onlineNames) # average score
 
-## score and alpha for ECR
+## score and alpha for ECR ####
 ECRNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "ECR11",
                "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18","ECR19","ECR20","ECR21","ECR22",
                "ECR23","ECR24","ECR25","ECR26","ECR27","ECR28","ECR29","ECR30","ECR31","ECR32","ECR33",
@@ -245,7 +270,7 @@ ECRKeys2 <- list(c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8
 
 ECRAlpha <- psych::alpha(valid.data[,ECRNames], 
                             keys=ECRKeys)  # calculate the alpha coefficient 
-print(ECRAlpha$total)  # std. alpha 0.954
+print(ECRAlpha$total)  # std. alpha 0.953831
 ECRScore <- psych::scoreItems(ECRKeys2,valid.data[,ECRNames], min = 1, max = 7)
 Datasum$ECR <- ECRScore$scores # average score
 
@@ -274,19 +299,19 @@ print(ECRavoidanceAlpha$total)  # std. alpha 0.958, instead of 0.916
 ECRavoidanceScore <- psych::scoreItems(ECRavoidanceKeys2,valid.data[,ECRavoidanceNames], min = 1, max = 7)
 Datasum$ECRavoidance <- ECRavoidanceScore$scores # average score
 
-## score and alpha for nostaglia
+## score and alpha for nostaglia ####
+# Note the SNS1 is reverse coding
 nostagliaNames <- c( "SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6" ,"SNS7" )
 nostagliaKeys <- c(-1,2,3,4,5,6,7) # reverse coded as negative
 nostagliaKeys2 <- list(c( "-SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6" ,"SNS7" ))
 # nostagliaKeys <- c(1,2,3,4,5,6,7) # in case the score is already re-coded
-nostagliaAlpha <- psych::alpha(valid.data[,nostagliaNames], 
-                               keys=nostagliaKeys)  # calculate the alpha coefficient 
+nostagliaAlpha <- psych::alpha(valid.data[,nostagliaNames], keys=nostagliaKeys)  # calculate the alpha coefficient 
 print(nostagliaAlpha$total)  # std. alpha 0.943, instead of 0.92
 
 nostagliaScore <- psych::scoreItems(nostagliaKeys2,valid.data[,nostagliaNames],min = 1, max = 7) ## 
 Datasum$nostaglia <- nostagliaScore$scores
 
-## score and alpha coefficient for ALEX
+## score and alpha coefficient for ALEX ####
 didfNames <- c("ALEX1","ALEX2","ALEX3","ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11")
 didfKeys <- c(1,2,3,-4,5,6,7,8,9,10,11) # original
 didfKeys2 <- list(c("ALEX1","ALEX2","ALEX3","-ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11"))
@@ -299,7 +324,7 @@ eotKeys2 <- list(c("-ALEX12","ALEX13","-ALEX14","ALEX15" ,"-ALEX16"))
 
 #Datasum$didf <- rowSums(valid.data[,didfNames],na.rm = T)/length(didfNames) # average score
 didfAlpha <-  psych::alpha(valid.data[,didfNames], keys=didfKeys)  # calculate the alpha coefficient of DIDF
-print(didfAlpha$total)  # print the alpha for DIDF: std.aplha: 0.929
+print(didfAlpha$total)  # print the alpha for DIDF: std.aplha: 0.9139629
 didfScore <- psych::scoreItems(didfKeys2,valid.data[,didfNames], min = 1, max = 5)
 Datasum$didf <- didfScore$scores
 
@@ -309,7 +334,7 @@ print(eotfAlpha$total)  # print the alpha for eot:std. alpha: 0.573
 eotScore <- psych::scoreItems(eotKeys2,valid.data[,eotNames], min = 1, max = 5)
 Datasum$eot <- eotScore$scores
 
-## score and alpha for attachemnt to home
+## score and alpha for attachemnt to home ####
 homeNames <- c( "HOME1","HOME2","HOME3","HOME4","HOME5","HOME6","HOME7","HOME8","HOME9" )
 homeKeys <- c(1,2,3,4,5,6,7,8,9) # reverse coded as negative
 
@@ -319,9 +344,10 @@ print(homeAlpha$total)  # std. alpha 0.88, instead of 0.901
 Datasum$attachhome <- rowSums(valid.data[,homeNames],na.rm = T)/length(homeNames)
 #homeItem <- psych::scoreItems(homeKeys,valid.data[,homeNames],min = 1, max = 5) ## 
 
-## gluctot and artgluctot (already calculated in multi-site dataset)
+## gluctot and artgluctot ####
+# already calculated in multi-site dataset
 Datasum$glucoseplosone <- rowSums(valid.data[,c("Q89_6_1_TEXT",'Q89_7_1_TEXT','Q89_12_1_TEXT')],na.rm = T)
-#Datasum$artgluctot <- rowSums(valid.data[,c("Q89_8_1_TEXT",'Q89_9_1_TEXT','Q89_13_1_TEXT')],na.rm = T)
+Datasum$artgluctot <- rowSums(valid.data[,c("Q89_8_1_TEXT",'Q89_9_1_TEXT','Q89_13_1_TEXT')],na.rm = T)
 Datasum$Site <- "Mturk"
 Datasum$heightm <- valid.data$heightm
 Datasum$weightkg <- valid.data$weightkg
@@ -336,7 +362,7 @@ DatasumSort <- subset(Datasum[ , order(names(Datasum))])
 
 #write to sum data
 
-write.csv(DatasumSort,'summaryMTurk.csv',row.names = F)
+write.csv(DatasumSort,'summary_pilot_MTurk.csv',row.names = F)
 
 ##### end ####
 
