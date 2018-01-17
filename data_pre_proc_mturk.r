@@ -202,7 +202,8 @@ Datasum$socialembedded <- SNSizeData$socEmbd
 #### below is the calculating of scale score and aphla coefficient for each scale ####
 
 #### score and alpha for self control scale ####
-scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
+scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , 
+                   "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
 scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the original scale with reverse coding
 # scontrolKeys2 <- list(c(1,-1,-1,-1,-1,1,-1,1,-1,-1,1,-1,-1)) #  this is the original scale with reverse coding
 scontrolKeys2 <- list(c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
@@ -360,7 +361,7 @@ Datasum$mintemp <- NA
 #Datasum$artgluctot <- rowSums(valid.data[,c("Q89_8_1_TEXT",'Q89_9_1_TEXT','Q89_13_1_TEXT')],na.rm = T)
 DatasumSort <- subset(Datasum[ , order(names(Datasum))])
 
-#write to sum data
+# write to sum data
 
 write.csv(DatasumSort,'summary_pilot_MTurk.csv',row.names = F)
 

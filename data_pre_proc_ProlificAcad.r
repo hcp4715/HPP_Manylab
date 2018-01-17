@@ -1,7 +1,73 @@
-## Code accompanying Hu, IJzerman et al.
-## Please cite the "Penguin Project" when using this syntax (https://osf.io/2rm5b/)
-## Install these packages below first(!) - not all used.
-
+#### Code_pre-proc_ProlificAcad_HPP####
+#
+### Purpose ###
+# Pre-processing the data from pilot data from prolific Academia as reported in IJzerman et al.(2018), Human Penguin Project (HPP).
+# Overview of HPP: https://osf.io/2rm5b/ 
+# 
+#
+# Code author: Chuan-Peng Hu, PhD, 
+# Affliated to: Neuroimaging Center (NIC), Johannes Gutenberg University Medical Center, 55131 Mainz, Germany;
+# Email: hcp4715@gmail.com
+# 
+# Author      Date       Notes/Changes
+# ========   =========   ========
+# C-P. Hu    17/01/17    add more notations
+#
+#
+### input data ####
+#
+# Oringinal data: sav file: 'prolific academic corrected dataset december 2015.sav' 
+#
+# Revised data: 'prolific_academic_corrected_201512_rev_yjx2_3.csv' (with codebook 'Codebook_HPP_prolific_academic_0619.xlsx')
+#       We thanks Jixin Yin for check the data and prepare the code book.
+# 
+### output file and Variables ####
+#
+# output file: 'summaryProflificAcd.csv'
+# 
+# including following variables:
+# Age
+# Sex 
+# stress         -- Perceived stress (Cohen & Wills, 1985)
+# nostalgia      -- (Routledge et al., 2008)
+# attachhome     -- attachment to home; Harris et al., 1996
+# selfcontrol    -- self-control, Tangney et al., 2004
+# avoidance      -- subscale of attachment, Fraley et al., 2000
+# anxiety        -- subscale of attachment, Fraley et al., 2000
+# EOT            -- alexithymia subscale; Kooiman et al., 2002
+# DIDF           -- alexithymia subscale; Kooiman et al., 2002
+# networksize    -- social network; Cohen et al., 1997
+# socialembedded -- social network; Cohen et al., 1997
+# CSI            -- complex social integration, social network; Cohen et al., 1997
+# gluctot        -- daily sugary drink consumption, Henriksen et al., 2014
+# artgluctot     -- diet drinks consumption, Henriksen et al., 2014 
+# height         -- height
+# weight         -- wightkg
+# mintemp        -- minimum temperature of the day
+# avghumidity    -- average humidity of the day
+#
+### final Note ####
+#
+# This script is largely based on spss syntax file 'Syntax to Calculate Scales and Reliabilities.sps'
+#
+#### compare results in article and here ####
+#
+# Items         In Article      Output of this script
+# ============  ===========     ========================
+# valid data    148(excluded 48) 100 (exclude 3)
+# selfcontrol                   0.8734
+# stress                        0.8971
+# attachphone                   0.8698
+# onlineid                      0.8936
+# ECR-total                     0.95389
+# ECR-anxiety                   0.93678
+# ECR-avoidance                 0.9451
+# nostalgia                     0.9499748
+# Alex-didf                     0.9081569
+# Alex-eot                      0.560
+# attachhome                    0.9067
+#
+### Preparing ####
 Sys.setlocale("LC_ALL", "English")  # set local encoding to English
 Sys.setenv(LANG = "en") # set the feedback language to English
 
@@ -17,7 +83,8 @@ pkgTest <- function(x)
 }
 
 # packages
-pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice','stargazer',"summarytools","psych","car",'memisc'))
+pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice',
+                'stargazer',"summarytools","psych","car",'memisc'))
 
 lapply(pkgNeeded,pkgTest)
 rm('pkgNeeded') # remove the variable 'pkgNeeded';
@@ -63,6 +130,7 @@ DataRaw$Q8[DataRaw$Q7 == 32 & DataRaw$Q8 == 2] <- 1
 # DataRaw$Temperature_t1_r <- if (any( DataRaw$Q8 == 2)) (((DataRaw$Q7-32)*5)/9) else DataRaw$Q7
 DataRaw$Temperature_t1_r <- DataRaw$Q7
 
+# transfer the temperature at T1 to the same scale
 for (ii in 1:length(DataRaw$Q8)){
         if (DataRaw$Q8[ii] ==2){
                 DataRaw$Temperature_t1_r[ii] <- ((DataRaw$Q7[ii]-32)*5)/9
@@ -75,6 +143,7 @@ DataRaw$Temperature_t2_r <- DataRaw$Q65
 DataRaw$Q66r <- DataRaw$Q66
 DataRaw$Q66r[is.na(DataRaw$Q66r)] <- 0
 
+# transfer the temperature at T2 to the same scale
 for (ii in 1:length(DataRaw$Q66r)){
         if (DataRaw$Q66r[ii] ==2){
                 DataRaw$Temperature_t2_r[ii] <- ((DataRaw$Q65[ii]-32)*5)/9
@@ -89,14 +158,20 @@ DataRaw$avgtemp_r <- rowSums(DataRaw[,c('Temperature_t1_r','Temperature_t2_r')],
 DataRaw$avgtemp_r[is.na(DataRaw$Q65)] <- DataRaw$Temperature_t1_r[is.na(DataRaw$Q65)]  
 
 
-# birth year
+# unify the birth year
 DataRaw$birthyear <- as.integer(paste("19",as.character(round(DataRaw$Q87,2)),sep = ''))
 
-
+# exclude participants
+# criteria: average temperation is greater than 34.99
 valid.data <- subset(DataRaw,avgtemp_r > 34.99) # average temperature higher than 34.99 is valid
+# criteria: T1 is greater than 34.99
 valid.data1 <- subset(DataRaw,Temperature_t1_r > 34.99)
+# criteria: T2 is greater than 34.99
 valid.data2 <- subset(DataRaw,Temperature_t2_r > 34.99)
+# criteria: T1 & T2 is greater than 34.99
 valid.data3 <- subset(DataRaw,Temperature_t2_r > 34.99 & Temperature_t1_r > 34.99 )
+# criteria: T1 or T2 or average is greater than 34.99
+valid.data4 <- subset(DataRaw,Temperature_t2_r > 34.99 | Temperature_t1_r > 34.99 | avgtemp_r > 34.99)
 
 valid.data$age <- 2014 - valid.data$birthyear # calcuate the age for each participant
 
@@ -111,7 +186,7 @@ Datasum$avgtemp <- valid.data$avgtemp_r  # average temperature
 #### calculate social network index ####
 ## calculate the soical diveristy
 # for social diversity, we re-code the types of relationship into 1 or 0
-# so, Q10, Q12,Q14,Q16,Q18,Q20,Q22,Q24,Q26(combined with Q27), Q28, Q30 were car::recoded
+# so, Q10, Q12,Q14,Q16,Q18,Q20,Q22,Q24,Q26(combined with Q27), Q28, Q30 were recoded by car::recoded
 SNINames <- c("SNI1","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19",
               "SNI21","SNI28","SNI29","SNI30","SNI31","SNI32")
 snDivNames <- c("SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19",
@@ -132,13 +207,15 @@ socDivData_r$SNIwork_r <- car::recode(socDivData_r$SNIwork,"0 = 0;1:10 = 1")
 SNIData <- cbind(SNIData, socDivData_r)  # combine by columne of re-coded data
 
 # extra groups, 0 --> 0; more than 0 --> 1
-
 extrDivData <- valid.data[,extrDivName]
+
 # re-code other groups: 0/NA -> 0; else -> 1
 extrDivData_r <- apply(extrDivData,2,function(x) {x <- car::recode(x,"0 = 0; NA = 0; else = 1"); x}) 
 extrDivData_r <- data.frame(extrDivData_r)
+
 # sum the other groups
 extrDivData_r$extrDiv <- rowSums(extrDivData_r)
+
 # re-code other groups again
 extrDivData_r$extrDiv_r <- car::recode(extrDivData_r$extrDiv,'0 = 0; else = 1')
 SNIData$extrDiv_r <- extrDivData_r$extrDiv_r
@@ -198,112 +275,139 @@ Datasum$socialembedded <- SNSizeData$socEmbd
 #### below is the calculating of scale score and aphla coefficient for each scale ####
 
 ## score and alpha for self control scale
-scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
+scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , 
+                   "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
 scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the original scale with reverse coding
+scontrolKeys2 <- list(c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
+                        "scontrol8", "-scontrol9", "-scontrol10", "scontrol11","-scontrol12", "-scontrol13" ))
+
 # scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13) # in case if the score in this dataset is already reversed
 scontrolAlpha <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
-print(scontrolAlpha$total)  # 0.467!!!!  problematic
-Datasum$selfcontrol <- rowSums(valid.data[,scontrolNames],na.rm = T)/length(scontrolNames) # average score
+print(scontrolAlpha$total)  # 0.8734  problematic
 
+SelfControlScore <- psych::scoreItems(scontrolKeys2,valid.data[,scontrolNames], min = 1, max = 5)
+print(SelfControlScore$alpha)
+
+Datasum$selfcontrol <- SelfControlScore$scores # self control score
 
 ## score and alpha for perceive stress
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", "stress9", "stress10",
                  "stress11", "stress12", "stress13", "stress14")
 stressKeys <- c(1,2,3,-4,-5,-6,-7,8,-9,-10,11,12,-13,14) # original key for reverse coding
-# stressKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14)        # in case the score is already re-coded
+stressKeys2 <- list(c("stress1" , "stress2" ,"stress3","-stress4", "-stress5", "-stress6", "-stress7", "stress8",
+                      "-stress9", "-stress10","stress11", "stress12", "-stress13", "stress14"))
 
 stressAlpha <- psych::alpha(valid.data[,stressNames], keys = stressKeys)  # calculate the alpha coefficient 
-print(stressAlpha$total)  # 0.6778  Not right
-Datasum$stress <- rowSums(valid.data[,stressNames],na.rm = T)/length(stressNames) # average score
+print(stressAlpha$total)  # 0.8971
+stressScore <- psych::scoreItems(stressKeys2,valid.data[,stressNames],min = 1, max = 5)
 
-## score and alpha for attach phone
+Datasum$stress <-stressScore$scores
+
+## score and alpha for attach phone ####
 phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone7","phone8","phone9" )
 phoneAlpha <- psych::alpha(valid.data[,phoneNames], 
                             keys=c(1,2,3,4,5,6,7,8,9))  # calculate the alpha coefficient 
-print(phoneAlpha$total)  # std. alpha 0.8868
+print(phoneAlpha$total)  # std. alpha 0.8698
 Datasum$attachphone <- rowSums(valid.data[,phoneNames],na.rm = T)/length(phoneNames) # average score
 
 
-## score and alpha for online (No Online for this?)
+## score and alpha for online ####
 onlineNames <- c( "onlineid1", "onlineid2","onlineid3","onlineid4", "onlineid5", "onlineid6","onlineid7","onlineid8",
                  "onlineid9", "onlineid10", "onlineide11")
 onlineAlpha <- psych::alpha(valid.data[,onlineNames], 
                            keys=c(1,2,3,4,5,6,7,8,9,10,11))  # calculate the alpha coefficient 
-print(onlineAlpha$total)  # std. alpha 0.8977
+print(onlineAlpha$total)  # std. alpha 0.8936
 #Datasum$online <- rowSums(valid.data[,onlineNames],na.rm = T)/length(onlineNames) # average score
 
-## score and alpha for ECR
+## score and alpha for ECR ####
 ECRNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "ECR11",
                "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18","ECR19","ECR20","ECR21","ECR22",
                "ECR23","ECR24","ECR25","ECR26","ECR27","ECR28","ECR29","ECR30","ECR31","ECR32","ECR33",
                "ECR34","ECR35","ECR36")
 ECRKeys <- c(1,2,3,4,5,6,7,8,-9,10,-11,12,13,14,15,16,17,18,
              19,-20,21,-22,23,24,25,-26,-27,-28,-29,-30,-31,32,-33,-34,-35,-36) # original reverse coding
-#ECRKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,
-#             19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36) # in case the score is already re-coded
-
+# make the key list for scoreItems
+ECRKeys2 <- list(c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "-ECR11",
+                    "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18","ECR19","-ECR20","ECR21","-ECR22",
+                    "ECR23","ECR24","ECR25","-ECR26","ECR27","-ECR28","-ECR29","-ECR30","-ECR31","ECR32","-ECR33",
+                    "-ECR34","-ECR35","-ECR36"))
 ECRAlpha <- psych::alpha(valid.data[,ECRNames], 
-                            keys=ECRKeys)  # calculate the alpha coefficient 
-print(ECRAlpha$total)  # std. alpha 0.776, instead of 0.932
-# Datasum$ECR <- rowSums(valid.data[,ECRNames],na.rm = T)/length(ECRNames) # average score
+                         keys=ECRKeys)  # calculate the alpha coefficient 
+print(ECRAlpha$total)  # std. alpha 0.95389
+ECRScore <- psych::scoreItems(ECRKeys2,valid.data[,ECRNames], min = 1, max = 7)
+Datasum$ECR <- ECRScore$scores # average score
 
 ## score and alpha for ECR Anxiety
-anxietyNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "ECR11",
+ECRanxietyNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "ECR11",
                "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18")
-anxietyKeys <- c(1,2,3,4,5,6,7,8,-9,10,-11,12,13,14,15,16,17,18) # reverse coded as negative
-# anxietyKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18) # in case the score is already re-coded
+ECRanxietyKeys  <- c(1,2,3,4,5,6,7,8,-9,10,-11,12,13,14,15,16,17,18) # reverse coded as negative
+ECRanxietyKeys2 <- list(c("ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "-ECR11",
+                          "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18"))
+ECRanxietyAlpha <- psych::alpha(valid.data[,ECRanxietyNames], 
+                                keys=ECRanxietyKeys)  # calculate the alpha coefficient 
+print(ECRanxietyAlpha$total)  # std. alpha 0.93678
 
-anxietyAlpha <- psych::alpha(valid.data[,anxietyNames], 
-                         keys=anxietyKeys)  # calculate the alpha coefficient 
-print(anxietyAlpha$total)  # std. alpha 0.876, instead of 0.92
-Datasum$anxiety <- rowSums(valid.data[,anxietyNames],na.rm = T)/length(anxietyNames) # average score
+ECRanxietyScore <- psych::scoreItems(ECRanxietyKeys2,valid.data[,ECRanxietyNames], min = 1, max = 7)
+Datasum$ECRanxeity <- ECRanxietyScore$scores # average score
 
-## score and alpha for ECR avoidance
-avoidanceNames <- c( "ECR19","ECR20","ECR21","ECR22","ECR23","ECR24","ECR25","ECR26","ECR27","ECR28","ECR29",
-                   "ECR30","ECR31","ECR32","ECR33", "ECR34","ECR35","ECR36")
-avoidanceKeys <- c(1,-2,3,-4,5,6,7,-8,-9,-10,-11,-12,-13,14,-15,-16,-17,-18) # reverse coded as negative
-# avoidanceKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18)   # in case the score is already re-coded
+## score and alpha for ECR avoidance ####
+ECRavoidanceNames <- c( "ECR19","ECR20","ECR21","ECR22","ECR23","ECR24","ECR25","ECR26","ECR27","ECR28","ECR29",
+                        "ECR30","ECR31","ECR32","ECR33", "ECR34","ECR35","ECR36")
+ECRavoidanceKeys <- c(1,-2,3,-4,5,6,7,-8,-9,-10,-11,-12,-13,14,-15,-16,-17,-18) # reverse coded as negative
+ECRavoidanceKeys2 <- list(c("ECR19","-ECR20","ECR21","-ECR22", "ECR23","ECR24","ECR25","-ECR26","ECR27",
+                            "-ECR28","-ECR29","-ECR30","-ECR31","ECR32","-ECR33", "-ECR34","-ECR35","-ECR36"))
 
-avoidanceAlpha <- psych::alpha(valid.data[,avoidanceNames], 
-                             keys=avoidanceKeys)  # calculate the alpha coefficient 
-print(avoidanceAlpha$total)  # std. alpha 0.838, instead of 0.916
-Datasum$avoidance <- rowSums(valid.data[,avoidanceNames],na.rm = T)/length(avoidanceNames) # average score
+ECRavoidanceAlpha <- psych::alpha(valid.data[,ECRavoidanceNames], 
+                                  keys=ECRavoidanceKeys)  # calculate the alpha coefficient 
+print(ECRavoidanceAlpha$total)  # std. alpha 0.9451, 
+ECRavoidanceScore <- psych::scoreItems(ECRavoidanceKeys2,valid.data[,ECRavoidanceNames], min = 1, max = 7)
+Datasum$ECRavoidance <- ECRavoidanceScore$scores # average score
 
 ## score and alpha for nostaglia
 nostagliaNames <- c( "SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6" ,"SNS7" )
 nostagliaKeys <- c(-1,2,3,4,5,6,7) # reverse coded as negative
+nostagliaKeys2 <- list(c( "-SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6" ,"SNS7" ))
 # nostagliaKeys <- c(1,2,3,4,5,6,7) # in case the score is already re-coded
-nostagliaAlpha <- psych::alpha(valid.data[,nostagliaNames], 
-                               keys=nostagliaKeys)  # calculate the alpha coefficient 
-print(nostagliaAlpha$total)  # std. alpha 0.765, instead of 0.92
-#nostagliaItem <- psych::scoreItems(nostagliaKeys,valid.data[,nostagliaNames],min = 1, max = 7) ## 
-Datasum$nostalgia <- rowSums(valid.data[,nostagliaNames],na.rm = T)/length(nostagliaNames) 
+nostagliaAlpha <- psych::alpha(valid.data[,nostagliaNames], keys=nostagliaKeys)  # calculate the alpha coefficient 
+print(nostagliaAlpha$total)  # std. alpha 0.9499748
 
-## score and alpha coefficient for ALEX
+nostagliaScore <- psych::scoreItems(nostagliaKeys2,valid.data[,nostagliaNames],min = 1, max = 7) ## 
+Datasum$nostaglia <- nostagliaScore$scores
+
+
+## score and alpha coefficient for ALEX ####
 didfNames <- c("ALEX1","ALEX2","ALEX3","ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11")
 didfKeys <- c(1,2,3,-4,5,6,7,8,9,10,11) # original
+didfKeys2 <- list(c("ALEX1","ALEX2","ALEX3","-ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11"))
 #didfKeys <- c(1,2,3,4,5,6,7,8,9,10,11) # in case the score is already re-coded
 
 eotNames <- c("ALEX12","ALEX13","ALEX14","ALEX15" ,"ALEX16")
 eotKeys <- c(-1,2,-3,4,-5) # original
+eotKeys2 <- list(c("-ALEX12","ALEX13","-ALEX14","ALEX15" ,"-ALEX16"))
 # eotKeys <- c(1,2,3,4,5) # in case the score is already re-coded
 
 #Datasum$didf <- rowSums(valid.data[,didfNames],na.rm = T)/length(didfNames) # average score
 didfAlpha <-  psych::alpha(valid.data[,didfNames], keys=didfKeys)  # calculate the alpha coefficient of DIDF
-print(didfAlpha$total)  # print the alpha for DIDF
+print(didfAlpha$total)  # print the alpha for DIDF: std.aplha: 0.9081569
+didfScore <- psych::scoreItems(didfKeys2,valid.data[,didfNames], min = 1, max = 5)
+Datasum$didf <- didfScore$scores
 
 #Datasum$eot <- rowSums(valid.data[,eotNames],na.rm = T)/length(eotNames) # average score
 eotfAlpha <-  psych::alpha(valid.data[,eotNames], keys=eotKeys)  # calculate the alpha coefficient of eot
-print(eotfAlpha$total)  # print the alpha for eot
+print(eotfAlpha$total)  # print the alpha for eot:std. alpha: 0.560
+eotScore <- psych::scoreItems(eotKeys2,valid.data[,eotNames], min = 1, max = 5)
+Datasum$eot <- eotScore$scores
 
 ## score and alpha for attachemnt to home
 homeNames <- c( "HOME1","HOME2","HOME3","HOME4","HOME5","HOME6","HOME7","HOME8","HOME9" )
 homeKeys <- c(1,2,3,4,5,6,7,8,9) # reverse coded as negative
 
 homeAlpha <- psych::alpha(valid.data[,homeNames], 
-                               keys=homeKeys)  # calculate the alpha coefficient 
-print(homeAlpha$total)  # std. alpha 0.9049, instead of 0.901
+                          keys=homeKeys)  # calculate the alpha coefficient 
+print(homeAlpha$total)  # std. alpha 0.9067
 Datasum$attachhome <- rowSums(valid.data[,homeNames],na.rm = T)/length(homeNames)
+#homeItem <- psych::scoreItems(homeKeys,valid.data[,homeNames],min = 1, max = 5) ## 
+
 
 ## gluctot and artgluctot (already calculated in multi-site dataset)
 Datasum$glucoseplosone <- rowSums(valid.data[,c("Q89_6_1_TEXT",'Q89_7_1_TEXT','Q89_12_1_TEXT')],na.rm = T)
@@ -318,7 +422,7 @@ Datasum$mintemp <- NA
 Datasum$Smoking <- valid.data$smoke
 DatasumSort <- subset(Datasum[ , order(names(Datasum))])
 
-#write to sum data
+# write to sum data
 
 write.csv(DatasumSort,'summaryProflificAcd.csv',row.names = F)
 
