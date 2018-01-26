@@ -12,6 +12,7 @@
 # Author      Date       Notes/Changes
 # ========   =========   ========
 # C-P. Hu    17/01/17    add more notations
+# C-P. Hu    26/01/18    add more specific criteria for excluding data
 #
 #
 ### input data ####
@@ -54,7 +55,7 @@
 #
 # Items         In Article      Output of this script
 # ============  ===========     ========================
-# valid data    148(excluded 48) 100 (exclude 3)
+# valid data    148(excluded 48) 100 (exclude 8, 92 valid)
 # selfcontrol                   0.8734
 # stress                        0.8971
 # attachphone                   0.8698
@@ -162,8 +163,12 @@ DataRaw$avgtemp_r[is.na(DataRaw$Q65)] <- DataRaw$Temperature_t1_r[is.na(DataRaw$
 DataRaw$birthyear <- as.integer(paste("19",as.character(round(DataRaw$Q87,2)),sep = ''))
 
 # exclude participants
-# criteria: average temperation is greater than 34.99
-valid.data <- subset(DataRaw,avgtemp_r > 34.99) # average temperature higher than 34.99 is valid
+# criteria: 
+# c1: average temperation is greater than 34.99
+# c2: not drink or eat somethin cold or warm in 10 minutes before (eatdrink = 1)
+# c3: no exercise in 60 mintues before the survey (exercise = 2)
+valid.data <- subset(DataRaw,avgtemp_r > 34.99 & eatdrink == 1 & exercise == 2) # average temperature higher than 34.99 is valid
+
 # criteria: T1 is greater than 34.99
 valid.data1 <- subset(DataRaw,Temperature_t1_r > 34.99)
 # criteria: T2 is greater than 34.99

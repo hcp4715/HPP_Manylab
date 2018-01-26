@@ -12,6 +12,7 @@
 # Author      Date       Notes/Changes
 # ========   =========   ========
 # C-P. Hu    23/12/17    add comparison between results here and reported in article
+# C-P. Hu    26/01/18    add more specific criteria for excluding data
 #
 #
 ### input data ####
@@ -54,7 +55,7 @@
 #
 # Items         In Article      Output of this script
 # ============  ===========     ========================
-# valid data    140(excluded 3) 141 (no exclusion)
+# valid data    140(excluded 3) 141 (1 exclusion)
 # selfcontrol                   0.8784647
 # stress                        0.8985846
 # attachphone                   0.8993025
@@ -103,7 +104,13 @@ DataRaw$Temperature_t2 <- if (any(DataRaw$Q66 == 2)) (((DataRaw$Q65-32)*5)/9) el
 DataRaw$country_region <- data_spss$country_  # get the country information
 rm(data_spss)  # remove the spss data
 
-valid.data <- subset(DataRaw,avgtemp > 34.99) # average temperature higher than 34.99 is valid
+# exclude participants
+# criteria: 
+# c1: average temperation is greater than 34.99
+# c2: not drink or eat somethin cold or warm in 10 minutes before (eatdrink = 1)
+# c3: no exercise in 60 mintues before the survey (exercise = 2)
+
+valid.data <- subset(DataRaw,avgtemp > 34.99 & eatdrink == 1 & exercise == 2) # average temperature higher than 34.99 is valid
 #valid.data1 <- subset(DataRaw,Temperature_t1 > 34.99)   # just another try, not used in following analysis
 #valid.data2 <- subset(DataRaw,Temperature_t2 > 34.99)   # just another try
 #valid.data3 <- subset(DataRaw,Temperature_t2 > 34.99 & Temperature_t1 > 34.99 ) # just another try
