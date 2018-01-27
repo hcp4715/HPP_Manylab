@@ -1,8 +1,73 @@
-## Code accompanying IJzerman et al.
-## Some of the code below based on http://www.stanford.edu/~stephsus/R-randomforest-guide.pdf, and further modified by Thomas Pollet and Hans IJzerman
-## Please cite the "Penguin Project" when using this syntax (https://osf.io/2rm5b/)
-## Install these packages below first(!) - not all used.
-
+#### Code_pre-proc_HPP_multi-site data####
+#
+### Purpose ###
+# Pre-processing the data from pilot data from multi-site dataset as reported in IJzerman et al.(2018), Human Penguin Project (HPP).
+# Overview of HPP: https://osf.io/2rm5b/ 
+# 
+#
+# Code author: Chuan-Peng Hu, PhD, 
+# Affliated to: Neuroimaging Center (NIC), Johannes Gutenberg University Medical Center, 55131 Mainz, Germany;
+# Email: hcp4715@gmail.com
+# 
+# Author      Date       Notes/Changes
+# ========   =========   ========
+# C-P. Hu    27/01/18    add more notations
+#
+#
+### input data ####
+#
+# Oringinal data: sav file: 'penguin v1d_7f.sav' 
+#
+# Revised data: 'HPP_mul_site_0627.csv' (with codebook 'Codebook_HPP_mul_sites_0612.xlsx')
+#       We thanks Jixin Yin for check the data and prepare the code book.
+# 
+### output file and Variables ####
+#
+# output file: 'summaryProflificAcd.csv'
+# 
+# including following variables:
+# Age
+# Sex 
+# stress         -- Perceived stress (Cohen & Wills, 1985)
+# nostalgia      -- (Routledge et al., 2008)
+# attachhome     -- attachment to home; Harris et al., 1996
+# selfcontrol    -- self-control, Tangney et al., 2004
+# avoidance      -- subscale of attachment, Fraley et al., 2000
+# anxiety        -- subscale of attachment, Fraley et al., 2000
+# EOT            -- alexithymia subscale; Kooiman et al., 2002
+# DIDF           -- alexithymia subscale; Kooiman et al., 2002
+# networksize    -- social network; Cohen et al., 1997
+# socialembedded -- social network; Cohen et al., 1997
+# CSI            -- complex social integration, social network; Cohen et al., 1997
+# gluctot        -- daily sugary drink consumption, Henriksen et al., 2014
+# artgluctot     -- diet drinks consumption, Henriksen et al., 2014 
+# height         -- height
+# weight         -- wightkg
+# mintemp        -- minimum temperature of the day
+# avghumidity    -- average humidity of the day
+#
+### final Note ####
+#
+# This script is largely based on spss syntax file 'Syntax to Calculate Scales and Reliabilities.sps'
+#
+#### compare results in article and here ####
+#
+# Items         In Article      Output of this script
+# ============  ===========     ========================
+# valid data    (excluded 48) (exclude 8, 92 valid)
+# selfcontrol                   0.8734
+# stress                        0.8971
+# attachphone                   0.8698
+# onlineid                      0.8936
+# ECR-total                     0.95389
+# ECR-anxiety                   0.93678
+# ECR-avoidance                 0.9451
+# nostalgia                     0.9499748
+# Alex-didf                     0.9081569
+# Alex-eot                      0.560
+# attachhome                    0.9067
+#
+### Preparing ####
 Sys.setlocale("LC_ALL", "English")  # set local encoding to English
 Sys.setenv(LANG = "en") # set the feedback language to English
 
@@ -25,37 +90,40 @@ rm('pkgNeeded') # remove the variable 'pkgNeeded';
 
 # this belowing code was not used.
 ## to read spss file with duplicated labels, fixed this error from: https://dadoseteorias.wordpress.com/2017/04/29/read-spss-duplicated-levels/
-Int2Factor <- function(x)
-{
-        if(!is.null(attr(x, "value.labels"))){
-                vlab <- attr(x, "value.labels")
-                if(sum(duplicated(vlab)) > 0)
-                        cat("Duplicated levels:", vlab, "\n")
-                else if(sum(duplicated(names(vlab))) > 0)
-                        cat("Duplicated labels:",
-                            names(vlab)[duplicated(names(vlab))], "\n")
-                else
-                        x <- factor(x, levels = as.numeric(vlab),
-                                    labels = names(vlab))
-        }
-        x
-}
+# Int2Factor <- function(x)
+# {
+#         if(!is.null(attr(x, "value.labels"))){
+#                 vlab <- attr(x, "value.labels")
+#                 if(sum(duplicated(vlab)) > 0)
+#                         cat("Duplicated levels:", vlab, "\n")
+#                 else if(sum(duplicated(names(vlab))) > 0)
+#                         cat("Duplicated labels:",
+#                             names(vlab)[duplicated(names(vlab))], "\n")
+#                 else
+#                         x <- factor(x, levels = as.numeric(vlab),
+#                                     labels = names(vlab))
+#         }
+#         x
+# }
 
-mul_data_raw <- read.spss("penguin v1d_7f.sav", use.value.labels = FALSE)
-mul_data_raw <- lapply(mul_data_raw, Int2Factor)
-mul_data_raw <- as.data.frame(mul_data_raw, stringsAsFactors = FALSE)
+# mul_data_raw <- read.spss("penguin v1d_7f.sav", use.value.labels = FALSE)
+# mul_data_raw <- lapply(mul_data_raw, Int2Factor)
+# mul_data_raw <- as.data.frame(mul_data_raw, stringsAsFactors = FALSE)
 
-attach(dataset.cleaned)
+# attach(dataset.cleaned)
 
+# read data
+mulDataRaw <- read.csv("HPP_mul_site_0627.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
 
-# I used the following code to read data
-mulDataRaw <- read.csv("HPP_mul_site_0613.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
-
+# exclude participants
+# criteria:average temperation is greater than 34.99
 valid.mulRaw <- subset(mulDataRaw,avgtemp > 34.99) # average temperature higher than 34.99 is valid
-valid.mulRaw2 <- subset(mulDataRaw,Temperature_t1 > 34.99)
-invalid.mulRaw <- subset(mulDataRaw,avgtemp <= 34.99)
 
-##
+# valid.mulRaw <- subset(mulDataRaw,avgtemp > 34.99) # average temperature higher than 34.99 is valid
+# valid.mulRaw2 <- subset(mulDataRaw,Temperature_t1 > 34.99)
+# invalid.mulRaw <- subset(mulDataRaw,avgtemp <= 34.99)
+
+## create a variable for storing the summary data
 mulDatasum <- valid.mulRaw[,c('age','sex')]
 mulDatasum$num <- seq(1:nrow(mulDatasum))
 mulDatasum <- mulDatasum[,c('num','age','sex')]
@@ -83,12 +151,11 @@ socDivData_r <- data.frame(socDivData_r)
 # add suffix to the colnames
 colnames(socDivData_r) <- paste(colnames(socDivData_r),"div",  sep = "_")
 socDivData_r$SNIwork <- socDivData_r$SNI17_div + socDivData_r$SNI18_div   # combine the social network for work
-socDivData_r$SNIwork_r <- recode(socDivData_r$SNIwork,"0 = 0;1:10 = 1")
+socDivData_r$SNIwork_r <- recode(socDivData_r$SNIwork,"0 = 0;1:10 = 1")   # recode the social network from work to 0 or 1
 SNIData <- cbind(SNIData, socDivData_r)  # combine by columne of re-coded data
 
 
-# extra groups, 0 --> 0; more than 0 --> 1
-
+# code the extra groups: 0 --> 0; more than 0 --> 1
 extrDivData <- valid.mulRaw[,extrDivName]
 # re-code other groups: 0/NA -> 0; else -> 1
 extrDivData_r <- apply(extrDivData,2,function(x) {x <- recode(x,"0 = 0; NA = 0; else = 1"); x}) 
@@ -154,11 +221,17 @@ mulDatasum$CSI <- rowSums(valid.mulRaw[,SNINames])
 #### below is the calculating of scale score and aphla coefficient for each scale ####
 
 ## score and alpha for self control scale
-scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
+scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" ,
+                   "scontrol6" , "scontrol7","scontrol8", "scontrol9", "scontrol10",
+                   "scontrol11" ,"scontrol12", "scontrol13" )
 # scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the original scale with reverse coding
-scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13) # the score in this dataset is already reversed
+scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13)   #  this dataset is already reverse coded 
+scontrolKeys2 <- list(c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
+                        "scontrol8", "-scontrol9", "-scontrol10", "scontrol11","-scontrol12", "-scontrol13" ))
+oxfdata <- subset(valid.mulRaw,Site == 'Oxford')
 scontrolAlpha <- psych::alpha(valid.mulRaw[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
-print(scontrolAlpha$total)  # 0.467!!!!  problematic
+print(scontrolAlpha$total)  #
+
 mulDatasum$scontrol <- rowSums(valid.mulRaw[,scontrolNames],na.rm = T)/length(scontrolNames) # average score
 
 # alpha for each site for self control

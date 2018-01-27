@@ -110,6 +110,21 @@ rm(data_spss)  # remove the spss data
 # c2: not drink or eat somethin cold or warm in 10 minutes before (eatdrink = 1)
 # c3: no exercise in 60 mintues before the survey (exercise = 2)
 
+# first: filter eatdrinking
+valid.data_Eat <- subset(DataRaw, eatdrink != 1)   # eat or drink  (3 participants)
+valid.data_NA <- subset(DataRaw, is.na(eatdrink))  # eat or drink data is NA (2 participants)
+valid.data_NoEat <- subset(DataRaw, eatdrink == 1) # No eat of drink
+
+# Second: filter exercise
+valid.data_exercise <- subset(valid.data_NoEat, exercise != 2) # did exercise within one hour (2 participants)
+valid.data_exercise_NA <- subset(valid.data_NoEat, is.na(exercise))
+valid.data_NoExercise <- subset(valid.data_NoEat, exercise == 2) # did exercise within one hour
+
+# Third: filter average temperature
+valid.data_Tmp <- subset(valid.data_NoExercise, avgtemp < 34.99)  # participant that not excluded by the other two criteria (1 participant)
+
+valid.data <- subset(DataRaw,avgtemp > 34.99 & eatdrink == 1 & exercise == 2) # average temperature higher than 34.99 is valid
+
 valid.data <- subset(DataRaw,avgtemp > 34.99 & eatdrink == 1 & exercise == 2) # average temperature higher than 34.99 is valid
 #valid.data1 <- subset(DataRaw,Temperature_t1 > 34.99)   # just another try, not used in following analysis
 #valid.data2 <- subset(DataRaw,Temperature_t2 > 34.99)   # just another try
