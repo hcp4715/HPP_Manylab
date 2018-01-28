@@ -26,26 +26,35 @@
 #
 # output file: 'summaryProflificAcd.csv'
 # 
-# including following variables:
-# Age
+# including following variables (reported in the article):
+# Age            -- using 2015 minus the birth year.
+# anxiety        -- subscale of attachment, Fraley et al., 2000,  using sum score
+# attachhome     -- attachment to home; Harris et al., 1996       using average score
+# attachphone    -- attachment to the phone                       using sum score
+# avghumid       -- average humidity of the day                   
+# avgtemp        -- average temperature
+# avoidance      -- subscale of attachment, Fraley et al., 2000   using sum score
+# gluctot        -- daily sugary drink consumption, Henriksen et al., 2014
+# health         -- health condition 
+# height         -- height (in meter)
+# Medication     -- medication condition
+# mintemp        -- minimum temperature of the day
+# networksize    -- social network; Cohen et al., 1997
+# nostalgia      -- (Routledge et al., 2008)                       using sum score
+# selfcontrol    -- self-control, Tangney et al., 2004             using sum score
 # Sex 
-# stress         -- Perceived stress (Cohen & Wills, 1985)
-# nostalgia      -- (Routledge et al., 2008)
-# attachhome     -- attachment to home; Harris et al., 1996
-# selfcontrol    -- self-control, Tangney et al., 2004
-# avoidance      -- subscale of attachment, Fraley et al., 2000
-# anxiety        -- subscale of attachment, Fraley et al., 2000
+# site           -- the plocation of participants
+# smoking        -- 
+# socialdiversity--
+# socialembedded -- social network; Cohen et al., 1997
+# stress         -- Perceived stress (Cohen & Wills, 1985)         using sum score
+# weight         -- wightkg
+
+### variables that not reported
 # EOT            -- alexithymia subscale; Kooiman et al., 2002
 # DIDF           -- alexithymia subscale; Kooiman et al., 2002
-# networksize    -- social network; Cohen et al., 1997
-# socialembedded -- social network; Cohen et al., 1997
 # CSI            -- complex social integration, social network; Cohen et al., 1997
-# gluctot        -- daily sugary drink consumption, Henriksen et al., 2014
 # artgluctot     -- diet drinks consumption, Henriksen et al., 2014 
-# height         -- height
-# weight         -- wightkg
-# mintemp        -- minimum temperature of the day
-# avghumidity    -- average humidity of the day
 #
 ### final Note ####
 #
@@ -119,7 +128,11 @@ rm('pkgNeeded') # remove the variable 'pkgNeeded';
 DataRaw <- read.csv("prolific_academic_corrected_201512_rev_yjx2_3.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
 
 # define the cleaned data:
-nameSumData <- c("age","anxiety", "attachhome", "attachphone","avghumid", "avgtemp", "avoidance", "glucoseplosone",
+namePilotPA <- c("age", "anxiety", "attachhome", "attachphone", "avghumid", "avgtemp", "avoidance", "glucoseplosone",
+                 "health", "heightm", "Medication", "mintemp", "networksize", "nostalgia", "selfcontrol", "Sex",
+                 "Site", "Smoking", "socialdiversity", "socialembedded", "stress","weightkg")
+
+nameReUse <- c("age","anxiety", "attachhome", "attachphone","avghumid", "avgtemp", "avoidance", "DIDF","EOT","glucoseplosone",
                         "health", "heightm", "Medication", "mintemp","networksize","nostalgia", "selfcontrol", "Sex",
                         "Site","Smoking", "socialdiversity", "socialembedded", "stress", "weightkg")
 
@@ -184,18 +197,25 @@ valid.data_Tmp <- subset(valid.data_NoExercise, avgtemp_r < 34.99)  # participan
 valid.data <- subset(DataRaw,avgtemp_r > 34.99 & eatdrink == 1 & exercise == 2) # average temperature higher than 34.99 is valid
 
 # criteria: T1 is greater than 34.99
-valid.data1 <- subset(DataRaw,Temperature_t1_r > 34.99)
+#valid.data1 <- subset(DataRaw,Temperature_t1_r > 34.99)
 # criteria: T2 is greater than 34.99
-valid.data2 <- subset(DataRaw,Temperature_t2_r > 34.99)
+#valid.data2 <- subset(DataRaw,Temperature_t2_r > 34.99)
 # criteria: T1 & T2 is greater than 34.99
-valid.data3 <- subset(DataRaw,Temperature_t2_r > 34.99 & Temperature_t1_r > 34.99 )
+#valid.data3 <- subset(DataRaw,Temperature_t2_r > 34.99 & Temperature_t1_r > 34.99 )
 # criteria: T1 or T2 or average is greater than 34.99
-valid.data4 <- subset(DataRaw,Temperature_t2_r > 34.99 | Temperature_t1_r > 34.99 | avgtemp_r > 34.99)
+#valid.data4 <- subset(DataRaw,Temperature_t2_r > 34.99 | Temperature_t1_r > 34.99 | avgtemp_r > 34.99)
 
 valid.data$age <- 2014 - valid.data$birthyear # calcuate the age for each participant
 
 ## dataframe for summary data
-Datasum <- valid.data[,c('age','Sex')]               # age, sex
+# create a empty data frame with colnames
+pilotPA <- setNames(data.frame(matrix(ncol = length(namePilotPA), nrow = nrow(valid.data))), namePilotPA)
+tmpName <- intersect(namePilotPA,colnames(valid.data)) # find the common colnames
+pilotPA[,tmpName] <- valid.data[,tmpName]               # age, sex
+pilotPA$Site <- "Prolific"
+pilotPA$Medication <- valid.data$meds
+pilotPA$Smoking <- valid.data$smoke
+pilotPA$glucoseplosone <- valid.data$glucose
 # Datasum$num <- seq(1:nrow(Datasum))                  # add an index
 # Datasum <- Datasum[,c('num','age','sex')]            # re-order the columns
 #Datasum$Temperature_t1 <- valid.data$Temperature_t1  # temperature at time point 1

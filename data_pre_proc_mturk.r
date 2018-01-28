@@ -124,11 +124,7 @@ valid.data_NoExercise <- subset(valid.data_NoEat, exercise == 2) # did exercise 
 valid.data_Tmp <- subset(valid.data_NoExercise, avgtemp < 34.99)  # participant that not excluded by the other two criteria (1 participant)
 
 valid.data <- subset(DataRaw,avgtemp > 34.99 & eatdrink == 1 & exercise == 2) # average temperature higher than 34.99 is valid
-
-valid.data <- subset(DataRaw,avgtemp > 34.99 & eatdrink == 1 & exercise == 2) # average temperature higher than 34.99 is valid
-#valid.data1 <- subset(DataRaw,Temperature_t1 > 34.99)   # just another try, not used in following analysis
-#valid.data2 <- subset(DataRaw,Temperature_t2 > 34.99)   # just another try
-#valid.data3 <- subset(DataRaw,Temperature_t2 > 34.99 & Temperature_t1 > 34.99 ) # just another try
+write.csv(valid.data,'HPP_MTurk_cleaned_valid.csv',row.names = F)
 
 ## create the dataframe for summary data that can be used for later use
 Datasum <- valid.data[,c('age','sex')]               # age, sex
