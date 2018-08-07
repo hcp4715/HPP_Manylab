@@ -13,6 +13,7 @@
 # ========   =========   ========
 # C-P. Hu    17/01/17    add more notations
 # C-P. Hu    26/01/18    add more specific criteria for excluding data
+# C-P. Hu    07/08/18    Compared with data reported in the article
 #
 #
 ### input data ####
@@ -172,7 +173,7 @@ valid.data <- subset(DataRaw,avgtemp_r > 34.99 & eatdrink == 1 & exercise == 2) 
 # criteria: T1 or T2 or average is greater than 34.99
 #valid.data4 <- subset(DataRaw,Temperature_t2_r > 34.99 | Temperature_t1_r > 34.99 | avgtemp_r > 34.99)
 
-valid.data$age <- 2014 - valid.data$birthyear # calcuate the age for each participant
+valid.data$age <- 2015 - valid.data$birthyear # calcuate the age for each participant
 
 ########## preprocessing finished ## ### ### ### ### ###
 
@@ -188,17 +189,8 @@ nameReUse <- c("age","anxiety", "attachhome", "attachphone","avghumid", "avgtemp
                "health", "heightm", "Medication", "mintemp","networksize","nostalgia", "selfcontrol", "Sex",
                "Site","Smoking", "socialdiversity", "socialembedded", "stress", "weightkg")
 
-
-# create a empty data frame with colnames
+# create an empty data frame with colnames
 pilotPA <- setNames(data.frame(matrix(ncol = length(namePilotPA), nrow = nrow(valid.data))), namePilotPA)
-tmpName <- intersect(namePilotPA,colnames(valid.data)) # find the common colnames
-pilotPA[,tmpName]      <- valid.data[,tmpName]               # Get the data from the original data
-pilotPA$Site           <- "Prolific"                         # Assign the site
-pilotPA$Medication     <- valid.data$meds                    # Get the med info
-pilotPA$Smoking        <- valid.data$smoke                   # Get the smoking info
-pilotPA$glucoseplosone <- valid.data$glucose                 # Get the glucose info
-
-pilotPA$avgtemp <- valid.data$avgtemp_r  # average temperature
 
 #### calculate social network indices ####
 # this is the CSI, which include three variables:
@@ -213,11 +205,13 @@ snDivNames  <- c("SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15"
                 "SNI21")
 extrDivName <- c("SNI28","SNI29","SNI30","SNI31","SNI32")    # colnames of the extra groups
 
-# get the social network data that do not need to recode
-SNIData        <- valid.data[,SNINames]
+SNIData <- valid.data[,SNINames]
+snDivData <- valid.data[,snDivNames]
 
-# recode Q10
+# recode Q10 (spouse): 1-> 1; else ->0
 SNIData$SNI1_r <- car::recode(SNIData$SNI1,"1= 1; else = 0")
+# recode as in sps file
+SNIData$SNI1_r2 <- car::recode(SNIData$SNI1,"0 = 0;NA = 0; 1:10 = 1")
 
 # re-code Q12 ~ Q30: NA -> 0; 0 -> 0; 1~10 -> 1
 socDivData_r   <- apply(SNIData[,snDivNames],2,function(x) {x <- car::recode(x,"0 = 0; NA = 0; 1:10 = 1;"); x}) 
@@ -226,52 +220,57 @@ socDivData_r   <- data.frame(socDivData_r)
 colnames(socDivData_r) <- paste(colnames(socDivData_r),"div",  sep = "_")    # add suffix to the colnames
 socDivData_r$SNIwork   <- socDivData_r$SNI17_div + socDivData_r$SNI18_div    # combine the social network for work
 socDivData_r$SNIwork_r <- car::recode(socDivData_r$SNIwork,"0 = 0;1:10 = 1")
-SNIData <- cbind(SNIData, socDivData_r)  # combine by columne of re-coded data
+socDivData_r$SNI1_r <- SNIData$SNI1_r
+socDivData_r$SNI1_r2 <- SNIData$SNI1_r2
+
+#SNIData <- cbind(SNIData, socDivData_r)  # combine by columne of re-coded data
 
 # # re-code extra groups, 0/NA --> 0; more than 0 --> 1
 extrDivData <- valid.data[,extrDivName]  # Get extra data
-extrDivData_r <- apply(extrDivData,2,function(x) {x <- car::recode(x,"0 = 0; NA = 0; else = 1"); x})  # recode
-extrDivData_r <- data.frame(extrDivData_r) # convert to dataframe
-
 # sum the other groups
-extrDivData_r$extrDiv <- rowSums(extrDivData_r)
+extrDivData$sum <- rowSums(extrDivData)
+extrDivData$extrDiv_r <- car::recode(extrDivData$sum,"0 = 0; NA = 0; else = 1")  # recode
+# extrDivData_r_2 <- data.frame(extrDivData_r) # convert to dataframe
 
-# re-code other groups again
-extrDivData_r$extrDiv_r <- car::recode(extrDivData_r$extrDiv,'0 = 0; else = 1')
-SNIData$extrDiv_r <- extrDivData_r$extrDiv_r
+socDivData_r$extrDiv_r <- extrDivData$extrDiv_r
 
 # add social diversity with other groups
 snDivNames_r <- c("SNI1_r","SNI3_div","SNI5_div","SNI7_div","SNI9_div","SNI11_div","SNI13_div","SNI15_div","SNIwork_r",
                   "SNI19_div","SNI21_div","extrDiv_r")
-
+snDivNames_r2 <- c("SNI1_r2","SNI3_div","SNI5_div","SNI7_div","SNI9_div","SNI11_div","SNI13_div","SNI15_div","SNIwork_r",
+                  "SNI19_div","SNI21_div","extrDiv_r")
 # calculate the social diveristy score
-SNIData$SNdiversity <- rowSums(SNIData[,snDivNames_r])
-
-pilotPA$socialdiversity_r <- SNIData$SNdiversity  # assign it to the output file
+SNIData$SNdiversity <- rowSums(socDivData_r[,snDivNames_r])
+SNIData$SNdiversity2 <- rowSums(socDivData_r[,snDivNames_r2])
+pilotPA$socialdiversity2 <- SNIData$SNdiversity2  # assign it to the output file
 
 # Social Network size
-# colnames for data for network size
-snSizeNames <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
+# get the social network data that do not need to recode
+SNIData        <- valid.data[,SNINames]
 
+# the colnames for the columns that needed to be recoded for calculating network size
+snSizeNames <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
+snSizeData <- SNIData[,snSizeNames]
+snSizeData[is.na(snSizeData)] <- 0
 # NOTE: In our experience, individuals sometimes interpret the SNI item inquiring about the number of "other group" 
 # members with whom they interact at least once every 2 weeks more broadly than we intended, with some respondents 
 # reporting up to 100 or more fellow group-members. To ensure that social network size scores are not artificially inflated by 
 # individuals reporting large group memberships, we recommend recoding the variable so that all values over 6 are given a 
 # score of 7, thus keeping it consistent with all other quantitative SNI items.
 # recode these data
-extrSizeData_r <- apply(extrDivData,2,function(x) {x <- car::recode(x,"0 = 0; NA = 0;1 = 1; 2= 2; 3= 3; 4= 4;5= 5; 6 = 6; else = 7"); x}) 
+extrSizeData_r <- apply(SNIData[,c("SNI28","SNI29","SNI30","SNI31",'SNI32')],2,function(x) {x <- car::recode(x,"0 = 0; NA = 0;1 = 1; 2= 2; 3= 3; 4= 4;5= 5; 6 = 6; else = 7"); x}) 
 extrSizeData_r <- data.frame(extrSizeData_r)
 
 # add suffix to the colnames
 colnames(extrSizeData_r) <- paste(colnames(extrSizeData_r),"sz",  sep = "_")
 
 # cobmine data
-SNSizeData <- cbind(SNIData,extrSizeData_r)
-SNSizeNames_r         <- c("SNI1_r","SNI3", "SNI5", "SNI7", "SNI9" , "SNI11", "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21",
+snSizeData <- cbind(snSizeData,extrSizeData_r)
+snSizeNames_r         <- c("SNI1_r","SNI3", "SNI5", "SNI7", "SNI9" , "SNI11", "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21",
                              "SNI28_sz","SNI29_sz","SNI30_sz","SNI31_sz","SNI32_sz")
 
 SNSizeData$snSize     <- rowSums(SNSizeData[,SNSizeNames_r],na.rm=TRUE) # calculate the network size score
-pilotPA$networksize_r <- SNSizeData$snSize                              # assign the value ot output data.
+pilotPA$networksize <- rowSums(SNSizeData[,SNSizeNames_r],na.rm=TRUE) # calculate the network size score
 
 ## number of embedded networks
 ## family: SNI1_r, SNI3,SNI5,SNI7,SNI9 (total >4);
@@ -298,7 +297,7 @@ SNSizeData$extra_r    <- car::recode(SNSizeData$extra,"1:4 = 0; 0 = 0; else = 1"
 # calculate the social embedded score
 SNSizeData$socEmbd <- rowSums(SNSizeData[,c("familyNW_r","friendNW_r","churchNW_r","studyNW_r","workNW_r",
                                             "neighbor_r","volun_r","extra_r")])
-pilotPA$socialembedded_r <- SNSizeData$socEmbd  # assign the value to output file
+pilotPA$socialembedded <- SNSizeData$socEmbd  # assign the value to output file
 
 #### below is the calculating of scale score and aphla coefficient for each scale ####
 
@@ -307,8 +306,8 @@ pilotPA$socialembedded_r <- SNSizeData$socEmbd  # assign the value to output fil
 scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , 
                    "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
 scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the original scale with reverse coding
-scontrolKeys2 <- list(c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
-                        "scontrol8", "-scontrol9", "-scontrol10", "scontrol11","-scontrol12", "-scontrol13" ))
+scontrolKeys2 <- c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
+                        "scontrol8", "-scontrol9", "-scontrol10", "scontrol11","-scontrol12", "-scontrol13" )
 
 # scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13) # in case if the score in this dataset is already reversed
 scontrolAlpha <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
@@ -320,30 +319,30 @@ SelfControlScore <- psych::scoreItems(scontrolKeys2,valid.data[,scontrolNames], 
 # SelfControlScore2 <- within(valid.data[,scontrolNames],score <- scontrol1+ (6 -scontrol2) + (6-scontrol3) + (6 - scontrol4) +
 #                            (6 - scontrol5) + scontrol6 +(6-scontrol7) + scontrol8 + (6-scontrol9) + (6-scontrol10)+
 #                             scontrol11 +(6-scontrol12) + (6-scontrol13))
-print(SelfControlScore$alpha)
+#print(SelfControlScore$alpha)
+# Datasum$selfcontrol <- SelfControlScore$scores # self control score
 
-Datasum$selfcontrol <- SelfControlScore$scores # self control score
+pilotPA$selfcontrol <- SelfControlScore$scores # self control score
 
 ## score and alpha for perceive stress
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", "stress9", "stress10",
-                 "stress11", "stress12", "stress13", "stress14")
-stressKeys <- c(1,2,3,-4,-5,-6,-7,8,-9,-10,11,12,-13,14) # original key for reverse coding
-stressKeys2 <- list(c("stress1" , "stress2" ,"stress3","-stress4", "-stress5", "-stress6", "-stress7", "stress8",
-                      "-stress9", "-stress10","stress11", "stress12", "-stress13", "stress14"))
+                 "stress11", "stress12", "stress13")
+stressKeys <- c(1,2,3,-4,-5,-6,-7,8,-9,-10,11,-12,13) # original key for reverse coding
+stressKeys2 <- c("stress1" , "stress2" ,"stress3","-stress4", "-stress5", "-stress6", "-stress7", 
+                      "stress8","-stress9", "-stress10","stress11", "-stress12", "stress13")
 
 stressAlpha <- psych::alpha(valid.data[,stressNames], keys = stressKeys)  # calculate the alpha coefficient 
 print(stressAlpha$total)  # 0.8971
-stressScore <- psych::scoreItems(stressKeys2,valid.data[,stressNames],min = 1, max = 5)
-
-Datasum$stress <-stressScore$scores
+stressScore <- psych::scoreItems(stressKeys2,valid.data[,stressNames],totals = T, min = 1, max = 5)
+pilotPA$stress <-stressScore$scores
 
 ## score and alpha for attach phone ####
 phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone7","phone8","phone9" )
 phoneAlpha <- psych::alpha(valid.data[,phoneNames], 
                             keys=c(1,2,3,4,5,6,7,8,9))  # calculate the alpha coefficient 
 print(phoneAlpha$total)  # std. alpha 0.8698
-Datasum$attachphone <- rowSums(valid.data[,phoneNames],na.rm = T)/length(phoneNames) # average score
-
+# Datasum$attachphone <- rowSums(valid.data[,phoneNames],na.rm = T) # sum score
+pilotPA$attachphone <- rowSums(valid.data[,phoneNames],na.rm = T) # sum score
 
 ## score and alpha for online ####
 onlineNames <- c( "onlineid1", "onlineid2","onlineid3","onlineid4", "onlineid5", "onlineid6","onlineid7","onlineid8",
@@ -352,6 +351,7 @@ onlineAlpha <- psych::alpha(valid.data[,onlineNames],
                            keys=c(1,2,3,4,5,6,7,8,9,10,11))  # calculate the alpha coefficient 
 print(onlineAlpha$total)  # std. alpha 0.8936
 #Datasum$online <- rowSums(valid.data[,onlineNames],na.rm = T)/length(onlineNames) # average score
+pilotPA$onlineid <- rowSums(valid.data[,onlineNames],na.rm = T)/length(onlineNames)
 
 ## score and alpha for ECR ####
 ECRNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "ECR11",
@@ -368,69 +368,72 @@ ECRKeys2 <- list(c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8
 ECRAlpha <- psych::alpha(valid.data[,ECRNames], 
                          keys=ECRKeys)  # calculate the alpha coefficient 
 print(ECRAlpha$total)  # std. alpha 0.95389
-ECRScore <- psych::scoreItems(ECRKeys2,valid.data[,ECRNames], min = 1, max = 7)
-Datasum$ECR <- ECRScore$scores # average score
+# ECRScore <- psych::scoreItems(ECRKeys2,valid.data[,ECRNames], min = 1, max = 7)
+# Datasum$ECR <- ECRScore$scores # average score
 
 ## score and alpha for ECR Anxiety
 ECRanxietyNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "ECR11",
                "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18")
 ECRanxietyKeys  <- c(1,2,3,4,5,6,7,8,-9,10,-11,12,13,14,15,16,17,18) # reverse coded as negative
-ECRanxietyKeys2 <- list(c("ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "-ECR11",
-                          "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18"))
+ECRanxietyKeys2 <- c("ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "-ECR9", "ECR10", "-ECR11",
+                          "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18")
 ECRanxietyAlpha <- psych::alpha(valid.data[,ECRanxietyNames], 
                                 keys=ECRanxietyKeys)  # calculate the alpha coefficient 
 print(ECRanxietyAlpha$total)  # std. alpha 0.93678
-
-ECRanxietyScore <- psych::scoreItems(ECRanxietyKeys2,valid.data[,ECRanxietyNames], min = 1, max = 7)
-Datasum$ECRanxeity <- ECRanxietyScore$scores # average score
+ECRanxietyScore <- psych::scoreItems(ECRanxietyKeys2,valid.data[,ECRanxietyNames], totals = T, min = 1, max = 7) 
+#Datasum$ECRanxeity <- ECRanxietyScore$scores # average score
+pilotPA$anxiety <-  ECRanxietyScore$scores   # sum score
 
 ## score and alpha for ECR avoidance ####
 ECRavoidanceNames <- c( "ECR19","ECR20","ECR21","ECR22","ECR23","ECR24","ECR25","ECR26","ECR27","ECR28","ECR29",
                         "ECR30","ECR31","ECR32","ECR33", "ECR34","ECR35","ECR36")
 ECRavoidanceKeys <- c(1,-2,3,-4,5,6,7,-8,-9,-10,-11,-12,-13,14,-15,-16,-17,-18) # reverse coded as negative
-ECRavoidanceKeys2 <- list(c("ECR19","-ECR20","ECR21","-ECR22", "ECR23","ECR24","ECR25","-ECR26","ECR27",
-                            "-ECR28","-ECR29","-ECR30","-ECR31","ECR32","-ECR33", "-ECR34","-ECR35","-ECR36"))
+ECRavoidanceKeys2 <- c("ECR19","-ECR20","ECR21","-ECR22", "ECR23","ECR24","ECR25","-ECR26","-ECR27",
+                            "-ECR28","-ECR29","-ECR30","-ECR31","ECR32","-ECR33", "-ECR34","-ECR35","-ECR36")
 
 ECRavoidanceAlpha <- psych::alpha(valid.data[,ECRavoidanceNames], 
                                   keys=ECRavoidanceKeys)  # calculate the alpha coefficient 
 print(ECRavoidanceAlpha$total)  # std. alpha 0.9451, 
-ECRavoidanceScore <- psych::scoreItems(ECRavoidanceKeys2,valid.data[,ECRavoidanceNames], min = 1, max = 7)
-Datasum$ECRavoidance <- ECRavoidanceScore$scores # average score
+ECRavoidanceScore <- psych::scoreItems(ECRavoidanceKeys2,valid.data[,ECRavoidanceNames], totals = T, min = 1, max = 7)
+#Datasum$ECRavoidance <- ECRavoidanceScore$scores # average score
+pilotPA$avoidance <- ECRavoidanceScore$scores # sum score
 
 ## score and alpha for nostaglia
 nostagliaNames <- c( "SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6" ,"SNS7" )
 nostagliaKeys <- c(-1,2,3,4,5,6,7) # reverse coded as negative
-nostagliaKeys2 <- list(c( "-SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6" ,"SNS7" ))
+nostagliaKeys2 <- c( "-SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6" ,"SNS7" )
 # nostagliaKeys <- c(1,2,3,4,5,6,7) # in case the score is already re-coded
 nostagliaAlpha <- psych::alpha(valid.data[,nostagliaNames], keys=nostagliaKeys)  # calculate the alpha coefficient 
 print(nostagliaAlpha$total)  # std. alpha 0.9499748
 
-nostagliaScore <- psych::scoreItems(nostagliaKeys2,valid.data[,nostagliaNames],min = 1, max = 7) ## 
-Datasum$nostaglia <- nostagliaScore$scores
+nostagliaScore <- psych::scoreItems(nostagliaKeys2,valid.data[,nostagliaNames], totals = T, min = 1, max = 7) ## 
+pilotPA$nostaglia <- nostagliaScore$scores
 
+# remove temporary variables to accelerate the processing
+rm(nostagliaNames,nostagliaKeys,nostagliaKeys2,nostagliaAlpha,nostagliaScore)
 
 ## score and alpha coefficient for ALEX ####
 didfNames <- c("ALEX1","ALEX2","ALEX3","ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11")
 didfKeys <- c(1,2,3,-4,5,6,7,8,9,10,11) # original
-didfKeys2 <- list(c("ALEX1","ALEX2","ALEX3","-ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11"))
+didfKeys2 <- c("ALEX1","ALEX2","ALEX3","-ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11")
 #didfKeys <- c(1,2,3,4,5,6,7,8,9,10,11) # in case the score is already re-coded
 
 eotNames <- c("ALEX12","ALEX13","ALEX14","ALEX15" ,"ALEX16")
 eotKeys <- c(-1,2,-3,4,-5) # original
-eotKeys2 <- list(c("-ALEX12","ALEX13","-ALEX14","ALEX15" ,"-ALEX16"))
+eotKeys2 <- c("-ALEX12","ALEX13","-ALEX14","ALEX15" ,"-ALEX16")
 # eotKeys <- c(1,2,3,4,5) # in case the score is already re-coded
 
 #Datasum$didf <- rowSums(valid.data[,didfNames],na.rm = T)/length(didfNames) # average score
 didfAlpha <-  psych::alpha(valid.data[,didfNames], keys=didfKeys)  # calculate the alpha coefficient of DIDF
 print(didfAlpha$total)  # print the alpha for DIDF: std.aplha: 0.9081569
 didfScore <- psych::scoreItems(didfKeys2,valid.data[,didfNames], min = 1, max = 5)
-Datasum$didf <- didfScore$scores
+pilotPA$didf <- didfScore$scores
 
 #Datasum$eot <- rowSums(valid.data[,eotNames],na.rm = T)/length(eotNames) # average score
 eotfAlpha <-  psych::alpha(valid.data[,eotNames], keys=eotKeys)  # calculate the alpha coefficient of eot
 print(eotfAlpha$total)  # print the alpha for eot:std. alpha: 0.560
 eotScore <- psych::scoreItems(eotKeys2,valid.data[,eotNames], min = 1, max = 5)
-Datasum$eot <- eotScore$scores
+pilotPA$eot <- eotScore$scores
 
 ## score and alpha for attachemnt to home
 homeNames <- c( "HOME1","HOME2","HOME3","HOME4","HOME5","HOME6","HOME7","HOME8","HOME9" )
@@ -439,26 +442,36 @@ homeKeys <- c(1,2,3,4,5,6,7,8,9) # reverse coded as negative
 homeAlpha <- psych::alpha(valid.data[,homeNames], 
                           keys=homeKeys)  # calculate the alpha coefficient 
 print(homeAlpha$total)  # std. alpha 0.9067
-Datasum$attachhome <- rowSums(valid.data[,homeNames],na.rm = T)/length(homeNames)
+#Datasum$attachhome <- rowSums(valid.data[,homeNames],na.rm = T)/length(homeNames)
 #homeItem <- psych::scoreItems(homeKeys,valid.data[,homeNames],min = 1, max = 5) ## 
-
+pilotPA$attachhome <- rowSums(valid.data[,homeNames],na.rm = T)/length(homeNames)
 
 ## gluctot and artgluctot (already calculated in multi-site dataset)
-Datasum$glucoseplosone <- rowSums(valid.data[,c("Q89_6_1_TEXT",'Q89_7_1_TEXT','Q89_12_1_TEXT')],na.rm = T)
+pilotPA$age <- valid.data$age
+pilotPA$glucoseplosone <- rowSums(valid.data[,c("Q89_6_1_TEXT",'Q89_7_1_TEXT','Q89_12_1_TEXT')],na.rm = T)
 #Datasum$artgluctot <- rowSums(valid.data[,c("Q89_8_1_TEXT",'Q89_9_1_TEXT','Q89_13_1_TEXT')],na.rm = T)
-Datasum$Site <- "ProlificAcademic"
-Datasum$heightm <- valid.data$heightm
-Datasum$weightkg <- valid.data$weightkg
-Datasum$health <- valid.data$health
-Datasum$avghumid <- NA
-Datasum$Medication <- valid.data$meds
-Datasum$mintemp <- NA
-Datasum$Smoking <- valid.data$smoke
-DatasumSort <- subset(Datasum[ , order(names(Datasum))])
+pilotPA$Site <- "ProlificAcademic"
+pilotPA$heightm <- valid.data$heightm
+pilotPA$weightkg <- valid.data$weightkg
+pilotPA$health <- valid.data$health
+pilotPA$avghumid <- NA
+pilotPA$Medication <- valid.data$meds
+pilotPA$mintemp <- NA
+pilotPA$Smoking <- valid.data$smoke
+pilotPA <- subset(pilotPA[ , order(names(pilotPA))])
 
 # write to sum data
 
-write.csv(DatasumSort,'summaryProflificAcd.csv',row.names = F)
+# find the common names of valid data and the empty data frame
+#tmpName <- intersect(namePilotPA,colnames(valid.data)) # find the common colnames
+
+write.csv(pilotPA,'from_hans_new.csv',row.names = F)
+
+# get the reported data for comparison
+repData <- read.csv("pilotpenguins_hans.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
+repData_PA <-subset(repData,Site == 2) # select the data
+write.csv(repData_PA,'reportedPA.csv',row.names = F)
+
 
 ##### end ####
 
