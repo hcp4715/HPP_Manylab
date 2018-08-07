@@ -1,7 +1,12 @@
 *.csv
+*.xlsx
+*.rar
+*.eps
 *.sav
 *.por
 *.RData
 *.Rhistory
 *.Rproj.user/
 *.Rproj
+*.zip
+.Rproj.user
