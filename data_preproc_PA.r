@@ -384,6 +384,17 @@ ECRanxietyScore <- psych::scoreItems(ECRanxietyKeys2,valid.data[,ECRanxietyNames
 #Datasum$ECRanxeity <- ECRanxietyScore$scores # average score
 pilotPA$anxiety <-  ECRanxietyScore$scores   # sum score
 
+## detect how each participants were removed ###
+ECRanxietyScore_d <- psych::scoreItems(ECRanxietyKeys2,DataRaw[,ECRanxietyNames], totals = T, min = 1, max = 7) 
+detectData <- data.frame(matrix(ncol = 3, nrow = 100))
+x <- c("ID", "age", "anxiety")
+colnames(detectData) <- x
+detectData$anxiety <- ECRanxietyScore_d$scores
+detectData$age <- 2015 - DataRaw$birthyear
+detectData$ID  <- DataRaw$V1
+write.csv(detectData,'detectDiff.csv',row.names = F)
+##### 
+
 ## score and alpha for ECR avoidance ####
 ECRavoidanceNames <- c( "ECR19","ECR20","ECR21","ECR22","ECR23","ECR24","ECR25","ECR26","ECR27","ECR28","ECR29",
                         "ECR30","ECR31","ECR32","ECR33", "ECR34","ECR35","ECR36")
