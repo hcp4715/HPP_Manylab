@@ -185,9 +185,9 @@ namePilotPA <- c("age", "anxiety", "attachhome", "attachphone", "avghumid", "avg
                  "health", "heightm", "Medication", "mintemp", "networksize", "nostalgia", "selfcontrol", "Sex",
                  "Site", "Smoking", "socialdiversity", "socialembedded", "stress","weightkg")
 # colnames for dataset that will be re-used later
-nameReUse <- c("age","anxiety", "attachhome", "attachphone","avghumid", "avgtemp", "avoidance", "DIDF","EOT","glucoseplosone",
-               "health", "heightm", "Medication", "mintemp","networksize","nostalgia", "selfcontrol", "Sex",
-               "Site","Smoking", "socialdiversity", "socialembedded", "stress", "weightkg")
+#nameReUse <- c("age","anxiety", "attachhome", "attachphone","avghumid", "avgtemp", "avoidance", "DIDF","EOT","glucoseplosone",
+#               "health", "heightm", "Medication", "mintemp","networksize","nostalgia", "selfcontrol", "Sex",
+#               "Site","Smoking", "socialdiversity", "socialembedded", "stress", "weightkg")
 
 # create an empty data frame with colnames
 pilotPA <- setNames(data.frame(matrix(ncol = length(namePilotPA), nrow = nrow(valid.data))), namePilotPA)
@@ -195,85 +195,103 @@ pilotPA <- setNames(data.frame(matrix(ncol = length(namePilotPA), nrow = nrow(va
 #### calculate social network indices ####
 # this is the CSI, which include three variables:
 #  'networksize', 'socialdiversity', 'socialembedded',
-
-## calculate the soical diveristy
+#
+# the corresponding between Questions number in SPSS and colnames in sharable data
+# Q10 - SNI1 (marital status)
+# Q12 - SNI3 (children see or talk)
+# Q14 - SNI5 (parents see or talk)
+# Q16 - SNI7 (partner's parents see or talk)
+# Q18 - SNI9 (relatives see or talk)
+# Q20 - SNI11 (friends see or talk)
+# Q22 - SNI13 (religious grou see or talk)
+# Q24 - SNI15 (students or teachers, see or talk)
+# Q26 - SNI17 (ppl supervised by you, see or talk)
+# Q27 - SNI18 (co-worker or supervisoer, see or talk), SNI 17, 18 need to combined when calculating diversity
+# Q28 - SNI19 (neigbors, see or talk)
+# Q30 - SNI21 (volunteer worker' see or talk)
+# Q33_2_1_1_text - SNI28 (group 1 members, see or talk)
+# Q33_2_1_2_text - SNI29 (group 2 members, see or talk)
+# Q33_2_1_3_text - SNI30 (group 3 members, see or talk)
+# Q33_2_1_4_text - SNI31 (group 4 members, see or talk)
+# Q33_2_1_5_text - SNI32 (group 5 members, see or talk)
+#
+## calculate the social diveristy
+# social diversity sum up different relationship type, therefore, each relationship was binarized.
 # for social diversity, we re-code the types of relationship into 1 or 0
 # so, Q10, Q12,Q14,Q16,Q18,Q20,Q22,Q24,Q26(combined with Q27), Q28, Q30 were recoded by function car::recoded
-SNINames    <- c("SNI1","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19",
-              "SNI21","SNI28","SNI29","SNI30","SNI31","SNI32")
 snDivNames  <- c("SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19",
                 "SNI21")
 extrDivName <- c("SNI28","SNI29","SNI30","SNI31","SNI32")    # colnames of the extra groups
 
-SNIData <- valid.data[,SNINames]
-snDivData <- valid.data[,snDivNames]
+# get data for diversity
+snDivData <- setNames(data.frame(matrix(ncol = length(snDivNames), nrow = nrow(valid.data))), snDivNames)
+#snDivData <- valid.data[,snDivNames]
+# snDivData <- valid.data[,snDivNames]
 
 # recode Q10 (spouse): 1-> 1; else ->0
-SNIData$SNI1_r <- car::recode(SNIData$SNI1,"1= 1; else = 0")
-# recode as in sps file
-SNIData$SNI1_r2 <- car::recode(SNIData$SNI1,"0 = 0;NA = 0; 1:10 = 1")
+snDivData$SNI1_r <- car::recode(valid.data$SNI1,"1= 1; else = 0")
 
 # re-code Q12 ~ Q30: NA -> 0; 0 -> 0; 1~10 -> 1
-socDivData_r   <- apply(SNIData[,snDivNames],2,function(x) {x <- car::recode(x,"0 = 0; NA = 0; 1:10 = 1;"); x}) 
-socDivData_r   <- data.frame(socDivData_r)
+snDivData[,snDivNames] <- apply(valid.data[,snDivNames],2,function(x) {x <- car::recode(x,"0 = 0; NA = 0; 1:10 = 1;"); x}) 
+# socDivData_r   <- data.frame(socDivData_r)
+colnames(snDivData[,snDivNames]) <- paste(snDivNames,"div",  sep = "_")    # add suffix to the colnames
 
-colnames(socDivData_r) <- paste(colnames(socDivData_r),"div",  sep = "_")    # add suffix to the colnames
-socDivData_r$SNIwork   <- socDivData_r$SNI17_div + socDivData_r$SNI18_div    # combine the social network for work
-socDivData_r$SNIwork_r <- car::recode(socDivData_r$SNIwork,"0 = 0;1:10 = 1")
-socDivData_r$SNI1_r <- SNIData$SNI1_r
-socDivData_r$SNI1_r2 <- SNIData$SNI1_r2
-
-#SNIData <- cbind(SNIData, socDivData_r)  # combine by columne of re-coded data
+snDivData$SNIwork   <- snDivData$SNI17 + snDivData$SNI18    # combine the diversity of work (SNI17, SNI18)
+snDivData$SNIwork_r <- car::recode(snDivData$SNIwork,"0 = 0;1:10 = 1")
 
 # # re-code extra groups, 0/NA --> 0; more than 0 --> 1
 extrDivData <- valid.data[,extrDivName]  # Get extra data
 # sum the other groups
 extrDivData$sum <- rowSums(extrDivData)
-extrDivData$extrDiv_r <- car::recode(extrDivData$sum,"0 = 0; NA = 0; else = 1")  # recode
-# extrDivData_r_2 <- data.frame(extrDivData_r) # convert to dataframe
-
-socDivData_r$extrDiv_r <- extrDivData$extrDiv_r
+snDivData$extrDiv_r <- car::recode(extrDivData$sum,"0 = 0; NA = 0; else = 1")  # recode
 
 # add social diversity with other groups
-snDivNames_r <- c("SNI1_r","SNI3_div","SNI5_div","SNI7_div","SNI9_div","SNI11_div","SNI13_div","SNI15_div","SNIwork_r",
-                  "SNI19_div","SNI21_div","extrDiv_r")
-snDivNames_r2 <- c("SNI1_r2","SNI3_div","SNI5_div","SNI7_div","SNI9_div","SNI11_div","SNI13_div","SNI15_div","SNIwork_r",
-                  "SNI19_div","SNI21_div","extrDiv_r")
-# calculate the social diveristy score
-SNIData$SNdiversity <- rowSums(socDivData_r[,snDivNames_r])
-SNIData$SNdiversity2 <- rowSums(socDivData_r[,snDivNames_r2])
-pilotPA$socialdiversity2 <- SNIData$SNdiversity2  # assign it to the output file
+snDivNames_r <- c("SNI1_r","SNI3","SNI5","SNI7","SNI9","SNI11","SNI13","SNI15","SNIwork_r",
+                  "SNI19","SNI21","extrDiv_r")
+
+# get the social diveristy score
+snDivData$SNdiversity <- rowSums(snDivData[,snDivNames_r])
+pilotPA$socialdiversity <- snDivData$SNdiversity  # assign it to the output file
 
 # Social Network size
-# get the social network data that do not need to recode
-SNIData        <- valid.data[,SNINames]
-
-# the colnames for the columns that needed to be recoded for calculating network size
-snSizeNames <- c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
-snSizeData <- SNIData[,snSizeNames]
-snSizeData[is.na(snSizeData)] <- 0
+# This index is the number of people in social network
+#
+# Q10 - SNI1 (marital status): 1 or 0
+# Q12 ~ Q30  - SNI3 ~ SNI21 (odd numbers): as indicated
+# for volunteer or other social group,0, 1-6, or 7
+# Q33_2_1_1_text - SNI28 (group 1 members, see or talk)
+# Q33_2_1_2_text - SNI29 (group 2 members, see or talk)
+# Q33_2_1_3_text - SNI30 (group 3 members, see or talk)
+# Q33_2_1_4_text - SNI31 (group 4 members, see or talk)
+# Q33_2_1_5_text - SNI32 (group 5 members, see or talk)
 # NOTE: In our experience, individuals sometimes interpret the SNI item inquiring about the number of "other group" 
 # members with whom they interact at least once every 2 weeks more broadly than we intended, with some respondents 
 # reporting up to 100 or more fellow group-members. To ensure that social network size scores are not artificially inflated by 
 # individuals reporting large group memberships, we recommend recoding the variable so that all values over 6 are given a 
 # score of 7, thus keeping it consistent with all other quantitative SNI items.
-# recode these data
-extrSizeData_r <- apply(SNIData[,c("SNI28","SNI29","SNI30","SNI31",'SNI32')],2,function(x) {x <- car::recode(x,"0 = 0; NA = 0;1 = 1; 2= 2; 3= 3; 4= 4;5= 5; 6 = 6; else = 7"); x}) 
-extrSizeData_r <- data.frame(extrSizeData_r)
+#
+# get the social network data that do not need to recode
+# Data        <- valid.data[,SNINames]
 
-# add suffix to the colnames
-colnames(extrSizeData_r) <- paste(colnames(extrSizeData_r),"sz",  sep = "_")
+# the colnames for the columns that needed to be recoded for calculating network size
+snSizeNames <- c("SNI3" , "SNI5", "SNI7" , "SNI9" , "SNI11"  , "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21")
+snSizeData <- valid.data[,snSizeNames]  # get the data
+snSizeData[is.na(snSizeData)] <- 0      # missing data equal to zero
+
+# recode data
+snSizeData$SNI1_r <- car::recode(valid.data$SNI1,"1= 1; else = 0")
+
+snSizeData[,c("SNI28","SNI29","SNI30","SNI31",'SNI32')] <- apply(valid.data[,c("SNI28","SNI29","SNI30","SNI31",'SNI32')],2,function(x) {x <- car::recode(x,"0 = 0; NA = 0;1 = 1; 2= 2; 3= 3; 4= 4;5= 5; 6 = 6; else = 7"); x}) 
 
 # cobmine data
-snSizeData <- cbind(snSizeData,extrSizeData_r)
-snSizeNames_r         <- c("SNI1_r","SNI3", "SNI5", "SNI7", "SNI9" , "SNI11", "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21",
-                             "SNI28_sz","SNI29_sz","SNI30_sz","SNI31_sz","SNI32_sz")
+snSizeNames_r <- c("SNI1_r","SNI3", "SNI5", "SNI7", "SNI9" , "SNI11", "SNI13",  "SNI15", "SNI17","SNI18","SNI19","SNI21",
+                             "SNI28","SNI29","SNI30","SNI31","SNI32")
 
-SNSizeData$snSize     <- rowSums(SNSizeData[,SNSizeNames_r],na.rm=TRUE) # calculate the network size score
-pilotPA$networksize <- rowSums(SNSizeData[,SNSizeNames_r],na.rm=TRUE) # calculate the network size score
+snSizeData$snSize     <- rowSums(snSizeData[,snSizeNames_r],na.rm=TRUE) # calculate the network size score
+pilotPA$networksize <- snSizeData$snSize # calculate the network size score
 
 ## number of embedded networks
-## family: SNI1_r, SNI3,SNI5,SNI7,SNI9 (total >4);
+## family: SNI1_r, SNI3,SNI5,SNI7,SNI9 (total > 4);
 ## friends: SNI11 (>4);
 ## Church: SNI13 (>4);
 ## Students/school: SNI 15 (>4)
@@ -282,22 +300,25 @@ pilotPA$networksize <- rowSums(SNSizeData[,SNSizeNames_r],na.rm=TRUE) # calculat
 ## volunteer SNI21 >4
 ## other groups: totoal > 4
 # recode based on the above rules:
-SNSizeData$familyNW   <- rowSums(SNSizeData[,c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9")])
-SNSizeData$familyNW_r <- car::recode(SNSizeData$familyNW,"1:4 = 0; 0 = 0; else = 1")
-SNSizeData$friendNW_r <- car::recode(SNSizeData$SNI11,"1:4 = 0; 0 = 0; else = 1")
-SNSizeData$churchNW_r <- car::recode(SNSizeData$SNI13,"1:4 = 0; 0 = 0; else = 1")
-SNSizeData$studyNW_r  <- car::recode(SNSizeData$SNI15,"1:4 = 0; 0 = 0; else = 1")
-SNSizeData$workNW     <- SNSizeData$SNI17 + SNSizeData$SNI18 
-SNSizeData$workNW_r   <- car::recode(SNSizeData$workNW,"1:4 = 0; 0 = 0; else = 1")
-SNSizeData$neighbor_r <- car::recode(SNSizeData$SNI19,"1:4 = 0; 0 = 0; else = 1")
-SNSizeData$volun_r    <- car::recode(SNSizeData$SNI21,"1:4 = 0; 0 = 0; else = 1")
-SNSizeData$extra      <- rowSums(SNSizeData[,c("SNI28","SNI29","SNI30","SNI31","SNI32")])
-SNSizeData$extra_r    <- car::recode(SNSizeData$extra,"1:4 = 0; 0 = 0; else = 1")
+snEmbedNames <- c('family') # generate a dataframe for embed index.
+snEmbedData <- setNames(data.frame(matrix(ncol = length(snEmbedNames), nrow = nrow(valid.data))), snEmbedNames)
+
+# calculated the embeded index for each network
+snEmbedData$family   <- rowSums(snSizeData[,c("SNI1_r","SNI3" , "SNI5", "SNI7" , "SNI9")])
+snEmbedData$family_r <- car::recode(snEmbedData$family,"1:4 = 0; 0 = 0; else = 1")
+snEmbedData$friends_r <- car::recode(snSizeData$SNI11,"0:4 = 0; else = 1")
+snEmbedData$Church_r <- car::recode(snSizeData$SNI13,"0:4 = 0; else = 1")
+snEmbedData$StuSchool_r  <- car::recode(snSizeData$SNI15,"0:4 = 0; else = 1")
+snEmbedData$work     <- snSizeData$SNI17 + snSizeData$SNI18 
+snEmbedData$work_r   <- car::recode(snEmbedData$work,"0:4 = 0; else = 1")
+snEmbedData$neighbor_r <- car::recode(snSizeData$SNI19,"0:4 = 0; else = 1")
+snEmbedData$volun_r    <- car::recode(snEmbedData$SNI21,"0:4 = 0;else = 1")
+snEmbedData$extra      <- rowSums(snSizeData[,c("SNI28","SNI29","SNI30","SNI31","SNI32")])
+snEmbedData$extra_r    <- car::recode(snEmbedData$extra,"0:4 = 0; else = 1")
 
 # calculate the social embedded score
-SNSizeData$socEmbd <- rowSums(SNSizeData[,c("familyNW_r","friendNW_r","churchNW_r","studyNW_r","workNW_r",
-                                            "neighbor_r","volun_r","extra_r")])
-pilotPA$socialembedded <- SNSizeData$socEmbd  # assign the value to output file
+snEmbedData$socEmbd <- rowSums(snEmbedData[,c("family_r","friends_r","Church_r","StuSchool_r","work_r","neighbor_r","volun_r","extra_r")])
+pilotPA$socialembedded <- snEmbedData$socEmbd  # assign the value to output file
 
 #### below is the calculating of scale score and aphla coefficient for each scale ####
 
@@ -308,6 +329,15 @@ scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" 
 scontrolKeys <- c(1,-2,-3,-4,-5,6,-7,8,-9,-10,11,-12,-13) #  this is the original scale with reverse coding
 scontrolKeys2 <- c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
                         "scontrol8", "-scontrol9", "-scontrol10", "scontrol11","-scontrol12", "-scontrol13" )
+
+# to replicate the results reported on OSF
+#scontrolKeys_2 <- c(-1,-2,-3,-4,5,-6,7,-8,-9,10,-11,-12,13) #  this is the original scale with reverse coding
+#scontrolKeys2_2 <- c("-scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","scontrol5", "-scontrol6", "scontrol7",
+#                   "-scontrol8", "-scontrol9", "scontrol10", "-scontrol11","-scontrol12", "scontrol13" )
+#scontrolAlpha_2 <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys_2)  # calculate the alpha coefficient 
+#print(scontrolAlpha_2$total)  # 0.8734  problematic
+#SelfControlScore_2 <- psych::scoreItems(scontrolKeys2_2,valid.data[,scontrolNames], totals = T, min = 1, max = 5)
+
 
 # scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13) # in case if the score in this dataset is already reversed
 scontrolAlpha <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
@@ -323,7 +353,7 @@ SelfControlScore <- psych::scoreItems(scontrolKeys2,valid.data[,scontrolNames], 
 # Datasum$selfcontrol <- SelfControlScore$scores # self control score
 
 pilotPA$selfcontrol <- SelfControlScore$scores # self control score
-
+#pilotPA$selfcontrol2 <- SelfControlScore_2$scores # self control score
 ## score and alpha for perceive stress
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", "stress9", "stress10",
                  "stress11", "stress12", "stress13")
@@ -385,14 +415,14 @@ ECRanxietyScore <- psych::scoreItems(ECRanxietyKeys2,valid.data[,ECRanxietyNames
 pilotPA$anxiety <-  ECRanxietyScore$scores   # sum score
 
 ## detect how each participants were removed ###
-ECRanxietyScore_d <- psych::scoreItems(ECRanxietyKeys2,DataRaw[,ECRanxietyNames], totals = T, min = 1, max = 7) 
-detectData <- data.frame(matrix(ncol = 3, nrow = 100))
-x <- c("ID", "age", "anxiety")
-colnames(detectData) <- x
-detectData$anxiety <- ECRanxietyScore_d$scores
-detectData$age <- 2015 - DataRaw$birthyear
-detectData$ID  <- DataRaw$V1
-write.csv(detectData,'detectDiff.csv',row.names = F)
+#ECRanxietyScore_d <- psych::scoreItems(ECRanxietyKeys2,DataRaw[,ECRanxietyNames], totals = T, min = 1, max = 7) 
+#detectData <- data.frame(matrix(ncol = 3, nrow = 100))
+#x <- c("ID", "age", "anxiety")
+#colnames(detectData) <- x
+#detectData$anxiety <- ECRanxietyScore_d$scores
+#detectData$age <- 2015 - DataRaw$birthyear
+#detectData$ID  <- DataRaw$V1
+#write.csv(detectData,'detectDiff.csv',row.names = F)
 ##### 
 
 ## score and alpha for ECR avoidance ####
@@ -413,15 +443,22 @@ pilotPA$avoidance <- ECRavoidanceScore$scores # sum score
 nostagliaNames <- c( "SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6" ,"SNS7" )
 nostagliaKeys <- c(-1,2,3,4,5,6,7) # reverse coded as negative
 nostagliaKeys2 <- c( "-SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6" ,"SNS7" )
+
+# code as reported on OSF
+nostagliaNames_2 <- c( "SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6")
+nostagliaKeys_2 <- c(-1,2,3,4,5,6) # reverse coded as negative
+nostagliaKeys2_2 <- c( "-SNS1" ,"SNS2","SNS3","SNS4", "SNS5","SNS6")
+
 # nostagliaKeys <- c(1,2,3,4,5,6,7) # in case the score is already re-coded
 nostagliaAlpha <- psych::alpha(valid.data[,nostagliaNames], keys=nostagliaKeys)  # calculate the alpha coefficient 
 print(nostagliaAlpha$total)  # std. alpha 0.9499748
 
+# to replicate the reported nostalgia score reported on OSF
 nostagliaScore <- psych::scoreItems(nostagliaKeys2,valid.data[,nostagliaNames], totals = T, min = 1, max = 7) ## 
-pilotPA$nostaglia <- nostagliaScore$scores
+pilotPA$nostalgia <- nostagliaScore$scores
 
 # remove temporary variables to accelerate the processing
-rm(nostagliaNames,nostagliaKeys,nostagliaKeys2,nostagliaAlpha,nostagliaScore)
+rm(nostagliaNames,nostagliaKeys,nostagliaKeys2,nostagliaAlpha)
 
 ## score and alpha coefficient for ALEX ####
 didfNames <- c("ALEX1","ALEX2","ALEX3","ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11")
@@ -462,27 +499,35 @@ pilotPA$age <- valid.data$age
 pilotPA$glucoseplosone <- rowSums(valid.data[,c("Q89_6_1_TEXT",'Q89_7_1_TEXT','Q89_12_1_TEXT')],na.rm = T)
 #Datasum$artgluctot <- rowSums(valid.data[,c("Q89_8_1_TEXT",'Q89_9_1_TEXT','Q89_13_1_TEXT')],na.rm = T)
 pilotPA$Site <- "ProlificAcademic"
+pilotPA$Sex <- valid.data$Sex
+pilotPA$avghumid <- 
+pilotPA$mintemp <- NA
+pilotPA$avgtemp <- valid.data$avgtemp_r
 pilotPA$heightm <- valid.data$heightm
 pilotPA$weightkg <- valid.data$weightkg
 pilotPA$health <- valid.data$health
-pilotPA$avghumid <- NA
+
 pilotPA$Medication <- valid.data$meds
-pilotPA$mintemp <- NA
 pilotPA$Smoking <- valid.data$smoke
 pilotPA <- subset(pilotPA[ , order(names(pilotPA))])
+pilotPA_reord <- pilotPA[with(pilotPA, order(age, anxiety,attachhome)), ] # order based on "age", "anxiety", and "attachhom"
 
+# get average humidity and min-temprature from the reported data for comparison
+# the data is already reorder by "age", "anxiety", and "attachhom"
+repoData_PA_s <- read.csv("Reported_osf_2018.08.08_remove_diff.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
+#repoData_PA_s <- repoData_PA_s[,c('age','anxiety','attachhome',"avghumid",'mintemp')]
+pilotPA_reord$avghumid <- repoData_PA_s$avghumid
+pilotPA_reord$mintemp <- repoData_PA_s$mintemp
 # write to sum data
 
 # find the common names of valid data and the empty data frame
 #tmpName <- intersect(namePilotPA,colnames(valid.data)) # find the common colnames
 
-write.csv(pilotPA,'from_hans_new.csv',row.names = F)
+write.csv(pilotPA_reord,'pilot_PA_208108.csv',row.names = F)
 
-# get the reported data for comparison
-repData <- read.csv("pilotpenguins_hans.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
-repData_PA <-subset(repData,Site == 2) # select the data
-write.csv(repData_PA,'reportedPA.csv',row.names = F)
+#write.csv(repData_PA,'reportedPA.csv',row.names = F)
 
 
 ##### end ####
 
+# still need to work on: heightm,nostalgia, selfcontrol, weightkg
