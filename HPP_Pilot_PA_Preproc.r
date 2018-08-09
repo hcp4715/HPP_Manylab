@@ -78,6 +78,10 @@ rm('pkgNeeded') # remove the variable 'pkgNeeded';
 # Load data
 DataRaw <- read.csv("prolific_academic_corrected_201512_rev_yjx2_3.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
 
+## read the data from previous validated
+repoData_PA_s <- read.csv("reportedPA_rm_diff_newer.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
+repoData_PA_s_reord <- repoData_PA_s[with(repoData_PA_s, order(age, anxiety,avoidance)), ] # order based on "age", "anxiety", and "avoidance"
+
 # recode the temperature:
 # there was one participants filled 32 for Q7 and 2 for Q8, resulted 0 for t1; however, the results of Q66 was 1, 
 # and again the answer for Q65 was 32. so here I change the answer for Q8 as 1.
@@ -180,16 +184,12 @@ valid.data$attachhome <- rowSums(valid.data[,homeNames],na.rm = T)/length(homeNa
 ## re-order the data
 valid.data_reord <- valid.data[with(valid.data, order(age, anxiety,avoidance)), ] # order based on "age", "anxiety", and "avoidance"
 
-## read the data from previous validated
-repoData_PA_s <- read.csv("reportedPA_rm_diff_newer.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
-repoData_PA_s_reord <- repoData_PA_s[with(repoData_PA_s, order(age, anxiety,avoidance)), ] # order based on "age", "anxiety", and "avoidance"
-
 ## save the useful variable for later open data
 SNINames <- paste("SNI",1:32,sep = '') # colnames for social network indices
 scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , 
                    "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", "stress9", "stress10",
-                 "stress11", "stress12", "stress13")
+                 "stress11", "stress12", "stress13","stress14")
 phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone7","phone8","phone9")
 onlineNames <- c( "onlineid1", "onlineid2","onlineid3","onlineid4", "onlineid5", "onlineid6","onlineid7","onlineid8",
                   "onlineid9", "onlineid10", "onlineide11")

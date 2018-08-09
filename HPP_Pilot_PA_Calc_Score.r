@@ -279,17 +279,17 @@ pilotPA$selfcontrol <- SelfControlScore$scores # self control score
 
 ## score and alpha for perceive stress
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", "stress9", "stress10",
-                 "stress11", "stress12", "stress13")
-stressKeys <- c(1,2,3,-4,-5,-6,-7,8,-9,-10,11,-12,13) # original key for reverse coding
+                 "stress11", "stress12", "stress13","stress14")
+stressKeys <- c(1,2,3,-4,-5,-6,-7,8,-9,-10,11,-12,13,14) # original key for reverse coding
 stressKeys2 <- c("stress1" , "stress2" ,"stress3","-stress4", "-stress5", "-stress6", "-stress7", 
-                      "stress8","-stress9", "-stress10","stress11", "-stress12", "stress13")
+                      "stress8","-stress9", "-stress10","stress11", "-stress12", "stress13",'stress14')
 
 stressAlpha <- psych::alpha(valid.data[,stressNames], keys = stressKeys)  # calculate the alpha coefficient 
 print(stressAlpha$total)  # 0.9107
 
 # also McDonald's omega
 stressOmega <- psych::omega(valid.data[,stressNames]) # warnings a loading great than 1 was detected
-print(stressOmega$omega_h) # 0.822
+print(stressOmega$omega_h) # 0.68
 
 stressScore <- psych::scoreItems(stressKeys2,valid.data[,stressNames],totals = T, min = 1, max = 5)
 pilotPA$stress <-stressScore$scores

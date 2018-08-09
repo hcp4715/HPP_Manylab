@@ -81,6 +81,10 @@ data_spss <- data.frame(as.data.set(spss.portable.file("HPP_pilot_MTurk_cleaned_
 # Read data
 DataRaw <- read.csv("HPP_MTurk_cleaned.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
 
+## read the data from previous validated
+repoData_MT_s <- read.csv("Mturk_From_osf_rm_diff.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
+repoData_MT_s_reord <- repoData_MT_s[with(repoData_MT_s, order(age, anxiety,avoidance)), ] # order based on "age", "anxiety", and "avoidance"
+
 # recode the temperature:
 # exclude participants
 # criteria: 
@@ -89,17 +93,17 @@ DataRaw <- read.csv("HPP_MTurk_cleaned.csv", header = TRUE,sep = ',', stringsAsF
 # c3: no exercise in 60 mintues before the survey (exercise = 2)
 
 # first: filter eatdrinking
-valid.data_Eat <- subset(DataRaw, eatdrink != 1)   # eat or drink  (3 participants)
-valid.data_NA <- subset(DataRaw, is.na(eatdrink))  # eat or drink data is NA (2 participants)
+valid.data_Eat <- subset(DataRaw, eatdrink != 1)   # eat or drink  (0 participants)
+valid.data_NA <- subset(DataRaw, is.na(eatdrink))  # eat or drink data is NA (0 participants)
 valid.data_NoEat <- subset(DataRaw, eatdrink == 1) # No eat of drink
 
 # Second: filter exercise
-valid.data_exercise <- subset(valid.data_NoEat, exercise != 2) # did exercise within one hour (2 participants)
+valid.data_exercise <- subset(valid.data_NoEat, exercise != 2) # did exercise within one hour (1 participants)
 valid.data_exercise_NA <- subset(valid.data_NoEat, is.na(exercise))
 valid.data_NoExercise <- subset(valid.data_NoEat, exercise == 2) # did exercise within one hour
 
 # Third: filter average temperature
-valid.data_Tmp <- subset(valid.data_NoExercise, avgtemp < 34.99)  # participant that not excluded by the other two criteria (1 participant)
+valid.data_Tmp <- subset(valid.data_NoExercise, avgtemp < 34.99)  # participant that not excluded by the other two criteria (0 participant)
 
 valid.data <- subset(DataRaw,avgtemp > 34.99 & eatdrink == 1 & exercise == 2) # average temperature higher than 34.99 is valid
 
@@ -111,11 +115,12 @@ valid.data$birthyear <- as.integer(paste("19",as.character(round(valid.data$birt
 valid.data$age <- 2015 - valid.data$birthyear # calcuate the age for each participant
 
 DataRaw$birthyear <- as.integer(paste("19",as.character(round(DataRaw$birthyear,2)),sep = ''))
+colnames(valid.data)[colnames(valid.data) == 'sex'] <- 'Sex'
 
-DataRaw$age <- 2015 - DataRaw$birthyear # calcuate the age for each participant
+#DataRaw$age <- 2015 - DataRaw$birthyear # calcuate the age for each participant
 
-
-# calculated the anxiety and attachhome score for re-ordering
+# detect differences between pilot-osf data and my data
+## calculated the anxiety and attachhome score for re-ordering
 ECRanxietyNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "ECR11",
                       "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18")
 ECRanxietyKeys  <- c(1,2,3,4,5,6,7,8,-9,10,-11,12,13,14,15,16,17,18) # reverse coded as negative
@@ -123,11 +128,11 @@ ECRanxietyKeys2 <- c("ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR
                      "ECR12","ECR13","ECR14","ECR15","ECR16", "ECR17","ECR18")
 ECRanxietyScore <- psych::scoreItems(ECRanxietyKeys2,valid.data[,ECRanxietyNames], totals = T, min = 1, max = 7) 
 valid.data$anxiety <-  ECRanxietyScore$scores   # sum score
-
-ECRanxietyScore2 <- psych::scoreItems(ECRanxietyKeys2,DataRaw[,ECRanxietyNames], totals = T, min = 1, max = 7) 
-DataRaw$anxiety <-  ECRanxietyScore2$scores   # sum score
-
-## score and alpha for ECR avoidance ####
+#
+#ECRanxietyScore2 <- psych::scoreItems(ECRanxietyKeys2,DataRaw[,ECRanxietyNames], totals = T, min = 1, max = 7) 
+#DataRaw$anxiety <-  ECRanxietyScore2$scores   # sum score
+#
+### score and alpha for ECR avoidance ####
 ECRavoidanceNames <- c( "ECR19","ECR20","ECR21","ECR22","ECR23","ECR24","ECR25","ECR26","ECR27","ECR28","ECR29",
                         "ECR30","ECR31","ECR32","ECR33", "ECR34","ECR35","ECR36")
 ECRavoidanceKeys <- c(1,-2,3,-4,5,6,7,-8,-9,-10,-11,-12,-13,14,-15,-16,-17,-18) # reverse coded as negative
@@ -136,34 +141,28 @@ ECRavoidanceKeys2 <- c("ECR19","-ECR20","ECR21","-ECR22", "ECR23","ECR24","ECR25
 ECRavoidanceScore <- psych::scoreItems(ECRavoidanceKeys2,valid.data[,ECRavoidanceNames], totals = T, min = 1, max = 7)
 valid.data$avoidance <- ECRavoidanceScore$scores # sum score
 
-ECRavoidanceScore2 <- psych::scoreItems(ECRavoidanceKeys2,DataRaw[,ECRavoidanceNames], totals = T, min = 1, max = 7)
-DataRaw$avoidance <- ECRavoidanceScore2$scores # sum score
-
-
-## score and alpha for attachemnt to home
-homeNames <- c( "HOME1","HOME2","HOME3","HOME4","HOME5","HOME6","HOME7","HOME8","HOME9" )
-homeKeys <- c(1,2,3,4,5,6,7,8,9) # reverse coded as negative
-valid.data$attachhome <- rowSums(valid.data[,homeNames],na.rm = T)/length(homeNames)
-
+ECRavoidanceScore <- psych::scoreItems(ECRavoidanceKeys2,valid.data[,ECRavoidanceNames], totals = T, min = 1, max = 7)
+valid.data$avoidance <- ECRavoidanceScore$scores # sum score
+#
 ## re-order the data
 valid.data_reord <- valid.data[with(valid.data, order(age, anxiety,avoidance)), ] # order based on "age", "anxiety", and "avoidance"
-write.csv(valid.data_reord[,c("age", "anxiety","avoidance")],'Mturk_pilot_clean.csv',row.names = F)
-
-DataRaw_reord <- DataRaw[with(DataRaw, order(age, anxiety,avoidance)), ] # order based on "age", "anxiety", and "avoidance"
-write.csv(DataRaw_reord[,c('V1',"age", "anxiety","avoidance")],'Mturk_pilot_all.csv',row.names = F)
-
+#write.csv(valid.data_reord[,c("age", "anxiety","avoidance")],'Mturk_pilot_clean.csv',row.names = F)
+#
+#DataRaw_reord <- DataRaw[with(DataRaw, order(age, anxiety,avoidance)), ] # order based on "age", "anxiety", and "avoidance"
+#write.csv(DataRaw_reord[,c('V1',"age", "anxiety","avoidance")],'Mturk_pilot_all.csv',row.names = F)
+#
 ## read the data from previous validated
-repoData <- read.csv("pilotpenguins_hans.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
-repoData_MT <- subset(repoData,Site == 1)
-repoData_MT_reord <- repoData_MT[with(repoData_MT, order(age, anxiety,avoidance)), ] # order based on "age", "anxiety", and "avoidance"
-write.csv(repoData_MT_reord,'Mturk_reported_osf.csv',row.names = F)
+#repoData <- read.csv("pilotpenguins_hans.csv", header = TRUE,sep = ',', stringsAsFactors=FALSE,na.strings=c(""," ","NA"))
+#repoData_MT <- subset(repoData,Site == 1)
+#repoData_MT_reord <- repoData_MT[with(repoData_MT, order(age, anxiety,avoidance)), ] # order based on "age", "anxiety", and "avoidance"
+#write.csv(repoData_MT_reord,'Mturk_reported_osf.csv',row.names = F)
 
 ## save the useful variable for later open data
 SNINames <- paste("SNI",1:32,sep = '') # colnames for social network indices
 scontrolNames <- c("scontrol1","scontrol2","scontrol3" ,"scontrol4","scontrol5" , "scontrol6" , 
                    "scontrol7","scontrol8", "scontrol9", "scontrol10", "scontrol11" ,"scontrol12", "scontrol13" )
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", "stress9", "stress10",
-                 "stress11", "stress12", "stress13")
+                 "stress11", "stress12", "stress13","stress14")
 phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone7","phone8","phone9")
 onlineNames <- c( "onlineid1", "onlineid2","onlineid3","onlineid4", "onlineid5", "onlineid6","onlineid7","onlineid8",
                   "onlineid9", "onlineid10", "onlineide11")
@@ -188,17 +187,17 @@ valid.data_share <- valid.data_reord[,selectNames]
 
 valid.data_share$glucoseplosone <- rowSums(valid.data_reord[,c("Q89_6_1_TEXT",'Q89_7_1_TEXT','Q89_12_1_TEXT')],na.rm = T)
 #Datasum$artgluctot <- rowSums(valid.data[,c("Q89_8_1_TEXT",'Q89_9_1_TEXT','Q89_13_1_TEXT')],na.rm = T)
-valid.data_share$Site       <- "ProlificAcademic"
+valid.data_share$Site       <- "Mturk"
 valid.data_share$birthyear  <- valid.data_reord$birthyear
-valid.data_share$avgtemp    <- valid.data_reord$avgtemp_r
+#valid.data_share$avgtemp    <- valid.data_reord$avgtemp_r
 valid.data_share$Medication <- valid.data_reord$meds
 valid.data_share$Smoking    <- valid.data_reord$smoke
 
 # from osf reported data
-valid.data_share$avghumid <- repoData_PA_s_reord$avghumid
-valid.data_share$mintemp  <-  repoData_PA_s_reord$mintemp
-valid.data_share$heightm  <- repoData_PA_s_reord$heightm
-valid.data_share$weightkg <- repoData_PA_s_reord$weightkg
+valid.data_share$avghumid <- repoData_MT_s_reord$avghumid
+valid.data_share$mintemp  <-  repoData_MT_s_reord$mintemp
+valid.data_share$heightm  <- repoData_MT_s_reord$heightm
+valid.data_share$weightkg <- repoData_MT_s_reord$weightkg
 
 # write the sharable data
-write.csv(valid.data_share,'Data_Raw_HPP_Pilot_PA_Share.csv',row.names = F)
+write.csv(valid.data_share,'Data_Raw_HPP_Pilot_MT_Share.csv',row.names = F)
