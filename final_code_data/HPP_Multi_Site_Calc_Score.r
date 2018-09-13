@@ -83,7 +83,7 @@ pkgTest <- function(x)
 }
 
 # packages
-pkgNeeded <- (c("tidyverse",'lattice','stargazer',"summarytools","psych","car",'lubridate'))
+pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice','stargazer',"summarytools","psych","car"))
 
 lapply(pkgNeeded,pkgTest)
 rm('pkgNeeded') # remove the variable 'pkgNeeded';
@@ -101,21 +101,12 @@ nameMultSite <- c('age','romantic','sex','sexpref','monogamous',
 
 # create an empty data frame with colnames
 sumMultSite <- valid.data[,nameMultSite]
-for (ii in 1:nrow(sumMultSite)){
-        if (is.na(sumMultSite$endtime[ii])){
-                sumMultSite$endtime_r[ii] <- NA
-        }else{
-                sumMultSite$endtime_r[ii] <- period_to_seconds(hms(sumMultSite$endtime[ii]))
-        }
-}
-
-#sumMultSite$endtime_r <- lubridate::period_to_seconds(hms(sumMultSite$endtime),na.action = na.omit)
 
 describeMulSite1 <- valid.data %>%
         select(Site,age,romantic,sex,heightm,weightkg,sexpref,monogamous,avgtemp,mintemp, 
                AvgHumidity,artgluctot,gluctot, Temperature_t1,Temperature_t2,health) %>%
         group_by(Site) %>%
-        dplyr::summarise(N = length(avgtemp),   # sample size for each site
+        summarise(N = length(avgtemp),   # sample size for each site
                   age_m = mean(age,na.rm = T), age_sd = sd(age,na.rm = T),age_NA = sum(is.na(age)),
                   romantic_yes = sum(romantic ==1,na.rm = T)/length(romantic),
                   romantic_no  = sum(romantic ==2,na.rm = T)/length(romantic),
@@ -258,51 +249,35 @@ scontrolKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13)   #  this dataset is already re
 scontrolKeys2 <- c("scontrol1","-scontrol2","-scontrol3" ,"-scontrol4","-scontrol5", "scontrol6", "-scontrol7",
                         "scontrol8", "-scontrol9", "-scontrol10", "scontrol11","-scontrol12", "-scontrol13" )
 
-# calculate the score:
+scontrolAlpha <- psych::alpha(valid.data[,scontrolNames], keys=scontrolKeys)  # calculate the alpha coefficient 
+print(scontrolAlpha$total)  #
+
+# McDonald's omega
+scontrolOmega <- psych::omega(valid.data[,scontrolNames])
+print(scontrolOmega$omega_h) # 0.604
+
 SelfControlScore <- psych::scoreItems(scontrolNames,valid.data[,scontrolNames], totals = T, min = 1, max = 5)
+
 sumMultSite$scontrol <- SelfControlScore$scores # self control score
 
 # Reliability for each site for self control
 siteName <- unique(valid.data$Site)
-sitesReliability <- data.frame(sites = siteName, scontrol_alpha = NA)
-totalRow <- data.frame(sites = 'Total', scontrol_alpha = NA)
-sitesReliability <- rbind(sitesReliability,totalRow)
+sitesReliability <- data.frame(sites = siteName, Scontrol_alpha = NA, Scontrol_omega = NA)
+
 sitesReliability$sites <- as.character(sitesReliability$sites)
-
-siteName <- as.character(sitesReliability$sites)
-# record which site have warning for omega estimation
-warnSite <- data.frame(sitesReliability$sites)
-colnames(warnSite) <- 'siteName'
-
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,scontrolNames]
-                
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,scontrolNames]
-                
-        }
-        tmpAlpha <- psych::alpha(tmpdf, keys= scontrolKeys) 
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$scontrolWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
+        tmpdf <- valid.data[valid.data$Site == i,scontrolNames]
+        tmpAlpha <- psych::alpha(tmpdf, keys=scontrolKeys) 
         tmpOmega <- psych::omega(tmpdf)
-        sitesReliability$scontrol_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$scontrol_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$scontrol_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$Scontrol_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
+        sitesReliability$Scontrol_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose the omega_h as omega index
 }
-
-rm(scontrolKeys,scontrolKeys2,scontrolNames,SelfControlScore)
 
 ## score and alpha for perceive stress
 # recode the data from poland
 valid.data_r <- valid.data
 rev_names <- c("stress4", "stress5", "stress6", "stress7","stress9", "stress10", "stress13")
-
-# special case for poland data (reverse coding)
+#valid.data_r[valid.data,rev_names]
 valid.data_r[valid.data_r$Site == 'Poland',rev_names] <- 6 - valid.data_r[valid.data_r$Site == 'Poland',rev_names]
 
 stressNames <- c("stress1" , "stress2" ,"stress3","stress4", "stress5", "stress6", "stress7", "stress8", 
@@ -312,103 +287,87 @@ stressKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14)        # for current dataset
 
 #stressKeys2_r <- c("stress1" , "stress2" ,"stress3","-stress4", "-stress5", "-stress6", "-stress7", "stress8",
 #                   "-stress9", "-stress10","stress11", "stress12", "-stress13", "stress14")
+# Alpha
+stressAlpha <- psych::alpha(valid.data_r[,stressNames], keys = stressKeys)  # calculate the alpha coefficient 
+print(stressAlpha$total)  # 0.83586  Not right
+
+# McDonald's omega
+stressOmega <- psych::omega(valid.data_r[,stressNames])
+print(stressOmega$omega_h) # 0.5188
 
 stressScore <- psych::scoreItems(stressNames,valid.data_r[,stressNames], totals = T, min = 1, max = 5)
 sumMultSite$stress <- stressScore$scores
 
+# special case for poland data (not reverse coding)
 #stressscore_pol <- psych::scoreItems(stressNames,valid.data_r[valid.data$Site == 'Poland',stressNames], totals = T, min = 1, max = 5)
 #sumMultSite$stress[sumMultSite$Site == 'Poland'] <- stressscore_pol$scores
 
 # alpha for each site
-#siteName <- unique(valid.data$Site)
+siteName <- unique(valid.data$Site)
 siteName_stress <- siteName[!siteName %in% c('Southampton')] # item 7 of Southampton is invariant, not able to calculate alph
 for (i in siteName_stress){
-        if (i == 'Total'){
-                tmpdf <- valid.data_r[,stressNames]
-                
-        } else {
-                tmpdf <- valid.data_r[valid.data_r$Site == i,stressNames]
-                
-        }
-
+        tmpdf <- valid.data_r[valid.data_r$Site == i,stressNames]
         tmpAlpha <- psych::alpha(tmpdf,keys = stressKeys)
-
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$stressWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
         tmpOmega <- psych::omega(tmpdf)
         sitesReliability$stress_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$stress_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose the Standard alpha
-        sitesReliability$stress_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose the Standard alpha
+        sitesReliability$stress_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose the Standard alpha
 }
 
-rm(valid.data_r,stressNames,stressKeys, stressScore) # remove the intermediate variables
+rm(valid.data_r) # remove the intermediate variables
 ##
+#stressAlpha_pol <- psych::alpha(valid.data_r[valid.data_r$Site == 'Poland',stressNames], keys = stressKeys)  # calculate the alpha coefficient 
+#stressAlpha_pol$total
+#sitesReliability$stress_alpha[sitesReliability$sites == 'Poland'] <- stressAlpha_pol$total[2]
 
 ## score and alpha for attach phone
 phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone7","phone8","phone9" )
+
+phoneAlpha <- psych::alpha(valid.data[,phoneNames], 
+                            keys=c(1,2,3,4,5,6,7,8,9))  # calculate the alpha coefficient 
+print(phoneAlpha$total)  # std. alpha 0.8868
+
+# McDonald's omega
+phoneOmega <- psych::omega(valid.data[,phoneNames])
+print(phoneOmega$omega_h) # 0.8049
 
 attachphoneScore <- psych::scoreItems(phoneNames,valid.data[,phoneNames], min = 1, max = 5) # mean score
 sumMultSite$attachphone <- attachphoneScore$scores  # mean score
 
 # alpha for each site
-#siteName <- unique(valid.data$Site)
+siteName <- unique(valid.data$Site)
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,phoneNames]
-                
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,phoneNames]
-                
-        }
+        tmpdf <- valid.data[valid.data$Site == i,phoneNames]
         tmpAlpha <- psych::alpha(tmpdf, 
                                  keys= c(1,2,3,4,5,6,7,8,9)) 
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$phoneWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
-        #tmpOmega <- psych::omega(tmpdf)
+        tmpOmega <- psych::omega(tmpdf)
         sitesReliability$phone_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$phone_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$phone_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$phone_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
 }
-
-rm(phoneNames)
 
 ## score and alpha for online
 onlineNames <- c( "onlineid1", "onlineid2","onlineid3","onlineid4", "onlineid5", "onlineid6","onlineid7","onlineid8",
                  "onlineid9", "onlineid10", "onlineide11")
 
+onlineAlpha <- psych::alpha(valid.data[,onlineNames], 
+                           keys=c(1,2,3,4,5,6,7,8,9,10,11))  # calculate the alpha coefficient 
+print(onlineAlpha$total)  # std. alpha 0.8977
+
+# McDonald's omega
+onlineOmega <- psych::omega(valid.data[,onlineNames])
+print(onlineOmega$omega_h) # 0.725
+
 onlineScore <- psych::scoreItems(onlineNames,valid.data[,onlineNames], min = 1, max = 5) # mean score
 sumMultSite$onlineid <- onlineScore$scores  # mean score
 
 # alpha for each site
-#siteName <- unique(valid.data$Site)
-#options(warn=1)
-# warnSite <- data.frame(siteName)
+siteName <- unique(valid.data$Site)
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,onlineNames]
-                
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,onlineNames]
-                
-        }
-        tmpAlpha <- psych::alpha(tmpdf, keys= c(1,2,3,4,5,6,7,8,9,10,11))
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$onlineWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
+        tmpdf <- valid.data[valid.data$Site == i,onlineNames]
+        tmpAlpha <- psych::alpha(tmpdf, 
+                                 keys= c(1,2,3,4,5,6,7,8,9,10,11)) 
+        tmpOmega <- psych::omega(tmpdf)
         sitesReliability$online_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$online_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$online_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$online_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
 }
 
 ## score and alpha for ECR
@@ -421,28 +380,24 @@ ECRNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "E
 ECRKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,
              19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36) # reverse coded as negative
 
+ECRAlpha <- psych::alpha(valid.data[,ECRNames], 
+                            keys=ECRKeys)  # calculate the alpha coefficient 
+print(ECRAlpha$total)  # std. alpha 0.776, instead of 0.932
+
+# McDonald's omega
+ECROmega <- psych::omega(valid.data[,ECRNames])
+print(ECROmega$omega_h) # 0.5126
+
 #sumMultSite$ECR <- rowSums(valid.data[,ECRNames],na.rm = T)/length(ECRNames) # average score
 
 # alpha for each site
-#siteName <- unique(valid.data$Site)
-
-for (i in sitesReliability$sites){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,ECRNames]
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,ECRNames]
-        }
-        
+siteName <- unique(valid.data$Site)
+for (i in siteName){
+        tmpdf <- valid.data[valid.data$Site == i,ECRNames]
         tmpAlpha <- psych::alpha(tmpdf, keys= ECRKeys) 
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$ECRWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
+        tmpOmega <- psych::omega(tmpdf)
         sitesReliability$ECR_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$ECR_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$ECR_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$ECR_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
 }
 
 ## score and alpha for ECR Anxiety
@@ -451,29 +406,26 @@ anxietyNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8"
 # anxietyKeys <- c(1,2,3,4,5,6,7,8,-9,10,-11,12,13,14,15,16,17,18) # reverse coded as negative
 anxietyKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18) 
 
+anxietyAlpha <- psych::alpha(valid.data[,anxietyNames], 
+                         keys=anxietyKeys)  # calculate the alpha coefficient 
+print(anxietyAlpha$total)  # std. alpha 0.876, instead of 0.92
+
+# McDonald's omega
+anxietyOmega <- psych::omega(valid.data[,anxietyNames])
+print(anxietyOmega$omega_h) # 0.7755
+
 sumMultSite$anxiety <- rowSums(valid.data[,anxietyNames],na.rm = T)/length(anxietyNames) # average score
 
 # standardize the anxiety score for each site
-sumMultSite <- plyr::ddply(sumMultSite,c('Site'),transform,anxiety_r = scale(anxiety))
+sumMultSite <- ddply(sumMultSite,c('Site'),transform,anxiety_r = scale(anxiety))
 
 # alpha for each site
-# warnSite <- data.frame(siteName)
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,anxietyNames]
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,anxietyNames]
-        }
+        tmpdf <- valid.data[valid.data$Site == i,anxietyNames]
         tmpAlpha <- psych::alpha(tmpdf, keys= anxietyKeys) 
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$anxietyWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
+        tmpOmega <- psych::omega(tmpdf)
         sitesReliability$anxiety_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$anxiety_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$anxiety_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$anxiety_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
 }
 
 ## score and alpha for ECR avoidance
@@ -482,35 +434,38 @@ avoidanceNames <- c( "ECR19","ECR20","ECR21","ECR22","ECR23","ECR24","ECR25","EC
 # avoidanceKeys <- c(1,-2,3,-4,5,6,7,-8,-9,-10,-11,-12,-13,14,-15,-16,-17,-18) # reverse coded as negative
 avoidanceKeys <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18)
 
+avoidanceAlpha <- psych::alpha(valid.data[,avoidanceNames], 
+                             keys=avoidanceKeys)  # calculate the alpha coefficient 
+print(avoidanceAlpha$total)  # std. alpha 0.838, instead of 0.916
+
+# McDonald's omega
+avoidanceOmega <- psych::omega(valid.data[,avoidanceNames])
+print(avoidanceOmega$omega_h) # 0.7906
+
 sumMultSite$avoidance <- rowSums(valid.data[,avoidanceNames],na.rm = T)/length(avoidanceNames) # average score
 
 # standardize for each group
-sumMultSite <- plyr::ddply(sumMultSite,c('Site'),transform,avoidance_r = scale(avoidance))
+sumMultSite <- ddply(sumMultSite,c('Site'),transform,avoidance_r = scale(avoidance))
 
 # alpha for each site
-# warnSite <- data.frame(siteName)
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,avoidanceNames]
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,avoidanceNames]
-        }
+        tmpdf <- valid.data[valid.data$Site == i,avoidanceNames]
         tmpAlpha <- psych::alpha(tmpdf, keys= avoidanceKeys) 
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$avoidWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
+        tmpOmega <- psych::omega(tmpdf)
         sitesReliability$avoidance_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$avoidance_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$avoidance_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$avoidance_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
 }
 
 ## score and alpha for nostalgia, without Q83(SNS1)
 nostalgiaNames <- c( "SNS2","SNS3","SNS4", "SNS5","SNS6","SNS7")
 nostalgiaKeys <- c(1,2,3,4,5,6) # reverse coded as negative
 nostalgiaKeys2 <- c("SNS2","SNS3","SNS4", "SNS5","SNS6","SNS7")
+nostalgiaAlpha <- psych::alpha(valid.data[,nostalgiaNames], keys=nostalgiaKeys)  # calculate the alpha coefficient 
+print(nostalgiaAlpha$total)  # 0.8823, std. alpha 0.9226
+
+# McDonald's omega
+nostalgiaOmega <- psych::omega(valid.data[,nostalgiaNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
+print(nostalgiaOmega$omega_h) # 0.8177
 
 nostalgiaScore <- psych::scoreItems(nostalgiaKeys2,valid.data[,nostalgiaNames], totals = T, min = 1, max = 7) ## 
 sumMultSite$nostalgia <- nostalgiaScore$scores
@@ -525,23 +480,12 @@ sumMultSite$nostalgia <- nostalgiaScore$scores
 #nostagliaItem <- psych::scoreItems(nostagliaKeys,valid.data[,nostagliaNames],min = 1, max = 7) ## 
 
 # alpha for each site
-# warnSite <- data.frame(siteName)
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,nostalgiaNames]
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,nostalgiaNames]
-        }
+        tmpdf <- valid.data[valid.data$Site == i,nostalgiaNames]
         tmpAlpha <- psych::alpha(tmpdf, keys= nostalgiaKeys)
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$nostalgiaWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
+        tmpOmega <- psych::omega(tmpdf)
         sitesReliability$nostalgia_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$nostalgia_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$nostalgia_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$nostalgia_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
 }
 
 ## score and alpha coefficient for ALEX
@@ -554,11 +498,11 @@ eotNames <- c("ALEX12","ALEX13","ALEX14","ALEX15" ,"ALEX16")
 eotKeys <- c(1,2,3,4,5)
 
 # sumMultSite$didf <- rowSums(valid.data[,didfNames],na.rm = T)/length(didfNames) # average score
-#didfAlpha <-  psych::alpha(valid.data[,didfNames], keys=didfKeys)  # calculate the alpha coefficient of DIDF
-#print(didfAlpha$total)  # print the alpha for DIDF
+didfAlpha <-  psych::alpha(valid.data[,didfNames], keys=didfKeys)  # calculate the alpha coefficient of DIDF
+print(didfAlpha$total)  # print the alpha for DIDF
 # McDonald's omega
-#didfOmega <- psych::omega(valid.data[,didfNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
-#print(didfOmega$omega_h) # 0.7794
+didfOmega <- psych::omega(valid.data[,didfNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
+print(didfOmega$omega_h) # 0.7794
 
 didfScore <- psych::scoreItems(didfNames,valid.data[,didfNames], min = 1, max = 5)
 sumMultSite$didf <- didfScore$scores
@@ -567,79 +511,50 @@ sumMultSite$didf <- didfScore$scores
 eotAlpha <-  psych::alpha(valid.data[,eotNames], keys=eotKeys)  # calculate the alpha coefficient of eot
 print(eotAlpha$total)  # print the alpha for eot:0.51
 # McDonald's omega
-#eotOmega <- psych::omega(valid.data[,eotNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
-#print(eotOmega$omega_h) # 0.354
+eotOmega <- psych::omega(valid.data[,eotNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
+print(eotOmega$omega_h) # 0.354
 eotScore <- psych::scoreItems(eotNames,valid.data[,eotNames], min = 1, max = 5)
 sumMultSite$eot <- eotScore$scores
 
 # alpha for each site for didf
-# warnSite <- data.frame(siteName)
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,didfNames]
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,didfNames]
-        }
+        tmpdf <- valid.data[valid.data$Site == i,didfNames]
         tmpAlpha <- psych::alpha(tmpdf, keys= didfKeys) 
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$didfWarn[warnSite$siteName == i] <<- 1
-                 })
+        tmpOmega <- psych::omega(tmpdf)
+        sitesReliability$didf_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
         sitesReliability$didf_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$didf_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$didf_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
 }
 
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,eotNames]
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,eotNames]
-        }
+        tmpdf <- valid.data[valid.data$Site == i,eotNames]
         tmpAlpha <- psych::alpha(tmpdf, keys= eotKeys) 
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$eotWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
+        tmpOmega <- psych::omega(tmpdf)
         sitesReliability$eot_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$eot_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$eot_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$eot_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
 }
 
 ## score and alpha for attachemnt to home
 homeNames <- c( "HOME1","HOME2","HOME3","HOME4","HOME5","HOME6","HOME7","HOME8","HOME9" )
 homeKeys <- c(1,2,3,4,5,6,7,8,9) # reverse coded as negative
 
-#homeAlpha <- psych::alpha(valid.data[,homeNames], 
-#                               keys=homeKeys)  # calculate the alpha coefficient 
-#print(homeAlpha$total)  # std. alpha 0.9049, instead of 0.901
+homeAlpha <- psych::alpha(valid.data[,homeNames], 
+                               keys=homeKeys)  # calculate the alpha coefficient 
+print(homeAlpha$total)  # std. alpha 0.9049, instead of 0.901
 
 # McDonald's omega
-#homeOmega <- psych::omega(valid.data[,homeNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
-#print(homeOmega$omega_h) # 0.759
+homeOmega <- psych::omega(valid.data[,homeNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
+print(homeOmega$omega_h) # 0.759
+
+
 homeScore <- psych::scoreItems(homeKeys,valid.data[,homeNames],min = 1, max = 5) ## 
 sumMultSite$attachhome <- homeScore$scores
 
-# warnSite <- data.frame(siteName)
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,homeNames]
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,homeNames]
-        }
+        tmpdf <- valid.data[valid.data$Site == i,homeNames]
         tmpAlpha <- psych::alpha(tmpdf, keys= homeKeys) 
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$Wrong[warnSite$siteName == i] <<- 1
-                         
-                 })
+        tmpOmega <- psych::omega(tmpdf)
         sitesReliability$home_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$home_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$home_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$home_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
 }
 
 ## score and alpha for KAMF
@@ -653,40 +568,29 @@ kamfData$KAMF3_r <-kamfData$KAMF3*1.166 - 0.166
 kamfNames_r <- c("KAMF1_r" ,"KAMF2","KAMF3_r","KAMF4","KAMF5","KAMF6","KAMF7")
 kamfKeys <- c(1,2,3,4,5,6,7) # reverse coded as negative
 
-#kamfAlpha <- psych::alpha(kamfData[,kamfNames], keys=kamfKeys)  # calculate the alpha coefficient for not re-coded
-#print(kamfAlpha$total) # std.alpha:0.867
+kamfAlpha <- psych::alpha(kamfData[,kamfNames], keys=kamfKeys)  # calculate the alpha coefficient for not re-coded
+print(kamfAlpha$total) # std.alpha:0.867
 
 # McDonald's omega
-#kamfOmega <- psych::omega(kamfData[,kamfNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
-#print(kamfOmega$omega_h) # 0.769
+kamfOmega <- psych::omega(kamfData[,kamfNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
+print(kamfOmega$omega_h) # 0.769
 
-#kamfAlpha_r <- psych::alpha(kamfData[,kamfNames_r], keys=kamfKeys)  # calculate the alpha coefficient 
-#print(kamfAlpha_r$total)  # std. alpha 0.8672, instead of 0.901
+kamfAlpha_r <- psych::alpha(kamfData[,kamfNames_r], keys=kamfKeys)  # calculate the alpha coefficient 
+print(kamfAlpha_r$total)  # std. alpha 0.8672, instead of 0.901
 # McDonald's omega
-#kamfOmega_r <- psych::omega(kamfData[,kamfNames_r])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
-#print(kamfOmega_r$omega_h) # 0.769
+kamfOmega_r <- psych::omega(kamfData[,kamfNames_r])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
+print(kamfOmega_r$omega_h) # 0.769
 
 kamfScore <- psych::scoreItems(kamfKeys,valid.data[,kamfNames],min = 1, max = 5) ## 
 sumMultSite$kamf <- kamfScore$scores
 
 # 
-# warnSite <- data.frame(siteName)
 for (i in siteName){
-        if (i == 'Total'){
-                tmpdf <- valid.data[,kamfNames]
-        } else {
-                tmpdf <- valid.data[valid.data$Site == i,kamfNames]
-        }
+        tmpdf <- valid.data[valid.data$Site == i,kamfNames]
         tmpAlpha <- psych::alpha(tmpdf, keys= kamfKeys) 
-        tryCatch(tmpOmega <- psych::omega(tmpdf),
-                 warning = function(w){
-                         print(w)
-                         warnSite$kamfWarn[warnSite$siteName == i] <<- 1
-                         
-                 })
+        tmpOmega <- psych::omega(tmpdf)
         sitesReliability$kampf_alpha[sitesReliability$sites == i] <- as.numeric(tmpAlpha$total[2]) # chose the Standard alpha
-        sitesReliability$kampf_omega_h[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
-        sitesReliability$kampf_omega_t[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega.tot) # chose Omega_H
+        sitesReliability$kampf_omega[sitesReliability$sites == i] <- as.numeric(tmpOmega$omega_h) # chose Omega_H
 }
 
 # write the data
@@ -698,7 +602,7 @@ describeMulSite2 <- sumMultSite %>%
         select(Site,scontrol,stress,attachphone,onlineid,anxiety,avoidance,nostalgia,didf, 
                eot,attachhome,networksize, socialdiversity, socialembedded) %>%
         group_by(Site) %>%
-        dplyr::summarise(scontrol_m = mean(scontrol,na.rm = T), scontrol_sd = sd(scontrol,na.rm = T),
+        summarise(scontrol_m = mean(scontrol,na.rm = T), scontrol_sd = sd(scontrol,na.rm = T),
                   stress_m = mean(stress,na.rm = T),stress_sd = sd(stress,na.rm = T),
                   attachphone_m = mean(attachphone,na.rm = T),attachphone_sd = sd(attachphone,na.rm = T),
                   onlineid_m = mean(onlineid,na.rm = T),onlineid_sd = sd(onlineid,na.rm = T),
@@ -717,6 +621,6 @@ describeMulSite <- merge(describeMulSite1,describeMulSite2,by = 'Site')
 write.csv(sumMultSite_reord,'Data_Sum_HPP_Multi_Site_No_Share.csv',row.names = F)
 write.csv(sitesReliability_reord,'Reliability_HPP_Multi_Site_Share.csv',row.names = F)
 write.csv(describeMulSite,'Descriptives_HPP_Multi_Site_Share.csv',row.names = F)
-write.csv(warnSite,'Data_warnings_omega.csv',row.names = F, na = '')
+
 ##### end ###=======
 
