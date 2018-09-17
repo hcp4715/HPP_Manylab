@@ -28,7 +28,7 @@
 # output file: 'Data_Raw_HPP_Pilot_Mturk_Share.csv'
 # 
 # Data related to the following variables are kept (reported in the article):
-# Age            -- using 2015 minus the birth year.
+# Age            -- the birth year.
 # anxiety        -- subscale of attachment, Fraley et al., 2000,  using sum score
 # attachhome     -- attachment to home; Harris et al., 1996       using average score
 # attachphone    -- attachment to the phone                       using sum score
@@ -112,7 +112,7 @@ valid.data <- subset(DataRaw,avgtemp > 34.99 & eatdrink == 1 & exercise == 2) # 
 #### detecting the differences
 valid.data$birthyear <- as.integer(paste("19",as.character(round(valid.data$birthyear,2)),sep = ''))
 
-valid.data$age <- 2015 - valid.data$birthyear # calcuate the age for each participant
+valid.data$age <- valid.data$birthyear # calcuate the age for each participant
 
 DataRaw$birthyear <- as.integer(paste("19",as.character(round(DataRaw$birthyear,2)),sep = ''))
 colnames(valid.data)[colnames(valid.data) == 'sex'] <- 'Sex'
@@ -176,7 +176,7 @@ homeNames <- c( "HOME1","HOME2","HOME3","HOME4","HOME5","HOME6","HOME7","HOME8",
 didfNames <- c("ALEX1","ALEX2","ALEX3","ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11")
 eotNames <- c("ALEX12","ALEX13","ALEX14","ALEX15" ,"ALEX16")
 
-OtherNames <- c('age','Sex','avgtemp','heightm','weightkg','health')
+OtherNames <- c('birthyear','Sex','avgtemp','health')
 
 selectNames <- c(OtherNames,SNINames,scontrolNames,stressNames,phoneNames,onlineNames,ECRNames,homeNames,nostagliaNames,didfNames,eotNames)
 
@@ -196,8 +196,8 @@ valid.data_share$Smoking    <- valid.data_reord$smoke
 # from osf reported data
 valid.data_share$avghumid <- repoData_MT_s_reord$avghumid
 valid.data_share$mintemp  <-  repoData_MT_s_reord$mintemp
-valid.data_share$heightm  <- repoData_MT_s_reord$heightm
-valid.data_share$weightkg <- repoData_MT_s_reord$weightkg
+#valid.data_share$heightm  <- repoData_MT_s_reord$heightm
+#valid.data_share$weightkg <- repoData_MT_s_reord$weightkg
 
 # write the sharable data
 write.csv(valid.data_share,'Data_Raw_HPP_Pilot_MT_Share.csv',row.names = F)

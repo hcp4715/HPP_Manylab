@@ -67,8 +67,7 @@ pkgTest <- function(x)
 }
 
 # packages
-pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice',
-                'stargazer',"summarytools","psych","car",'memisc'))
+pkgNeeded <- (c("plyr","party", 'stargazer',"summarytools","psych","car",'memisc'))
 
 lapply(pkgNeeded,pkgTest)
 rm('pkgNeeded') # remove the variable 'pkgNeeded';
@@ -150,7 +149,7 @@ valid.data <- subset(DataRaw,avgtemp_r > 34.99 & eatdrink == 1 & exercise == 2) 
 # criteria: T1 or T2 or average is greater than 34.99
 #valid.data4 <- subset(DataRaw,Temperature_t2_r > 34.99 | Temperature_t1_r > 34.99 | avgtemp_r > 34.99)
 
-valid.data$age <- 2015 - valid.data$birthyear # calcuate the age for each participant
+valid.data$age <- valid.data$birthyear # calcuate the age for each participant
 
 # calculated the anxiety and attachhome score for re-ordering
 ECRanxietyNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "ECR11",
@@ -203,7 +202,7 @@ homeNames <- c( "HOME1","HOME2","HOME3","HOME4","HOME5","HOME6","HOME7","HOME8",
 didfNames <- c("ALEX1","ALEX2","ALEX3","ALEX4","ALEX5" ,"ALEX6", "ALEX7", "ALEX8", "ALEX9" ,"ALEX10","ALEX11")
 eotNames <- c("ALEX12","ALEX13","ALEX14","ALEX15" ,"ALEX16")
 
-OtherNames <- c('age','Sex','avgtemp','heightm','weightkg','health')
+OtherNames <- c('birthyear','Sex','avgtemp','health')
 
 selectNames <- c(OtherNames,SNINames,scontrolNames,stressNames,phoneNames,onlineNames,ECRNames,homeNames,nostagliaNames,didfNames,eotNames)
 
@@ -223,8 +222,8 @@ valid.data_share$Smoking    <- valid.data_reord$smoke
 # from osf reported data
 valid.data_share$avghumid <- repoData_PA_s_reord$avghumid
 valid.data_share$mintemp  <-  repoData_PA_s_reord$mintemp
-valid.data_share$heightm  <- repoData_PA_s_reord$heightm
-valid.data_share$weightkg <- repoData_PA_s_reord$weightkg
+#valid.data_share$heightm  <- repoData_PA_s_reord$heightm
+#valid.data_share$weightkg <- repoData_PA_s_reord$weightkg
 
 # write the sharable data
 write.csv(valid.data_share,'Data_Raw_HPP_Pilot_PA_Share.csv',row.names = F)

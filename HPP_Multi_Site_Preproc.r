@@ -240,6 +240,7 @@ mulDataRaw_share$DEQ <- repoData_reord$DEQ
 mulDataRaw_NO_share <- mulDataRaw_share
 mulDataRaw_NO_share$longitude <- mulDataRaw_reord$LocationLongitude
 
+mulDataRaw_share <- mulDataRaw_NO_share[, -which(names(mulDataRaw_share) %in% c("sexpref","heightm","weightkg"))]
 # correct the site name for "tsinghua"
 
 
