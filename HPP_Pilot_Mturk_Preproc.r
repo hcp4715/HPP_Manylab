@@ -57,22 +57,21 @@ Sys.setenv(LANG = "en") # set the feedback language to English
 
 rm(list = setdiff(ls(), lsf.str())) # remove all variables except functions
 
-pkgTest <- function(x)
-{
-  if (!require(x,character.only = TRUE))
-  {
-    install.packages(x,dep = TRUE)
-    if(!require(x,character.only = TRUE)) stop("Package not found")
-  }
+# packages, if not exist, install.
+
+# packages, if not exist, install.
+pkgTest <- function(x){
+        if (!require(x,character.only = TRUE)){
+                install.packages(x,dep = TRUE)
+                if(!require(x,character.only = TRUE)) stop("Package not found")
+        }
 }
 
 # packages
-pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice',
-                'stargazer',"summarytools","psych","car",'memisc'))
+pkgNeeded <- c("psych",'tidyverse','foreign')
 
 lapply(pkgNeeded,pkgTest)
 rm('pkgNeeded') # remove the variable 'pkgNeeded';
-
 
 #### Preprocessing #####
 # load the spss file for the country information, the '.por' file is transferred from '.sav' file
@@ -190,7 +189,7 @@ valid.data_share$glucoseplosone <- rowSums(valid.data_reord[,c("Q89_6_1_TEXT",'Q
 valid.data_share$Site       <- "Mturk"
 valid.data_share$birthyear  <- valid.data_reord$birthyear
 #valid.data_share$avgtemp    <- valid.data_reord$avgtemp_r
-valid.data_share$Medication <- valid.data_reord$meds
+#valid.data_share$Medication <- valid.data_reord$meds
 valid.data_share$Smoking    <- valid.data_reord$smoke
 
 # from osf reported data
@@ -198,6 +197,10 @@ valid.data_share$avghumid <- repoData_MT_s_reord$avghumid
 valid.data_share$mintemp  <-  repoData_MT_s_reord$mintemp
 #valid.data_share$heightm  <- repoData_MT_s_reord$heightm
 #valid.data_share$weightkg <- repoData_MT_s_reord$weightkg
+#valid.data_share <-valid.data_share[,order(names(valid.data_share))] # order columns by alphabeta 
+valid.data_share <- valid.data_share %>%
+        dplyr::select("Site","birthyear","Sex","health", "avgtemp","glucoseplosone", "Smoking",
+               "avghumid","mintemp",everything())
 
 # write the sharable data
 write.csv(valid.data_share,'Data_Raw_HPP_Pilot_MT_Share.csv',row.names = F)

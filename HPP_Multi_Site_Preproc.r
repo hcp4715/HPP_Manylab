@@ -73,20 +73,21 @@ Sys.setenv(LANG = "en") # set the feedback language to English
 
 rm(list = setdiff(ls(), lsf.str())) # remove all variables except functions
 
-pkgTest <- function(x)
-{
-        if (!require(x,character.only = TRUE))
-        {
+# packages, if not exist, install.
+pkgTest <- function(x){
+        if (!require(x,character.only = TRUE)){
                 install.packages(x,dep = TRUE)
                 if(!require(x,character.only = TRUE)) stop("Package not found")
         }
 }
 
 # packages
-pkgNeeded <- (c("randomForest","plyr","foreign", "party", 'tree','lattice','stargazer',"summarytools","psych","car"))
+pkgNeeded <- c("psych",'tidyverse','foreign')
 
 lapply(pkgNeeded,pkgTest)
 rm('pkgNeeded') # remove the variable 'pkgNeeded';
+
+if(length(new.packages)) install.packages(new.packages)
 
 # this belowing code was not used.
 ## to read spss file with duplicated labels, fixed this error from: https://dadoseteorias.wordpress.com/2017/04/29/read-spss-duplicated-levels/
@@ -222,12 +223,12 @@ eotNames <- c("ALEX12","ALEX13","ALEX14","ALEX15" ,"ALEX16")
 kamfNames <- c("KAMF1" ,"KAMF2","KAMF3","KAMF4","KAMF5","KAMF6","KAMF7")
 straqNames <- paste('STRAQ', 1:57,sep = '_')
 
-OtherNames <- c('age','sex','sexpref','romantic','monogamous',
+OtherNames <- c("Site",'age','sex','sexpref','romantic','monogamous',
                 'heightm','weightkg','health','meds',
                 'gluctot',"artgluctot","smoke","cigs", "eatdrink","exercise", 
                 'Temperature_t1','Temperature_t2',
                 'avgtemp','AvgHumidity','mintemp','endtime',
-                'language', "langfamily","Site")
+                'language', "langfamily")
 
 selectNames <- c(OtherNames,SNINames,scontrolNames,stressNames,phoneNames,onlineNames,ECRNames,homeNames,nostagliaNames,didfNames,eotNames,kamfNames,straqNames)
 
@@ -240,9 +241,15 @@ mulDataRaw_share$DEQ <- repoData_reord$DEQ
 mulDataRaw_NO_share <- mulDataRaw_share
 mulDataRaw_NO_share$longitude <- mulDataRaw_reord$LocationLongitude
 
-mulDataRaw_share <- mulDataRaw_NO_share[, -which(names(mulDataRaw_NO_share) %in% c("sexpref","heightm","weightkg",'longitude','endtime'))]
+mulDataRaw_share <- mulDataRaw_NO_share[, -which(names(mulDataRaw_NO_share) %in% c("sexpref","heightm","weightkg",'longitude','endtime','meds'))]
 # correct the site name for "tsinghua"
 
+mulDataRaw_share <- mulDataRaw_share %>%
+        dplyr::select("Site","age","sex","monogamous", "romantic","health",
+                      "exercise","eatdrink","gluctot",'artgluctot',"smoke",'cigs', 
+                      "avgtemp","Temperature_t1","Temperature_t2",
+                      "DEQ","AvgHumidity","mintemp","language","langfamily",
+                      everything())
 
 # save the re-ordered summary data from OSF, i.e., reported in our manuscript.
 write.csv(repoData_reord,'mult_site_from_OSF_ordered.csv',row.names = F)
