@@ -84,21 +84,21 @@ valid.data <- read.csv("Data_Raw_HPP_Pilot_MT_Share.csv", header = TRUE,sep = ',
 
 table(valid.data$Sex)
 
-meanAge <- mean(valid.data$age,na.rm=TRUE)
-sdAge <- sd(valid.data$age,na.rm = T) 
+meanAge <- mean(valid.data$birthyear,na.rm=TRUE)
+sdAge <- sd(valid.data$birthyear,na.rm = T) 
 
 #### start to calculate score #########
 # define the output file colnames:
 # colnames used for comparing with reported data
-namePilotMT <- c("age", "anxiety", "attachhome", "attachphone", "avghumid", "avgtemp", "avoidance", "glucoseplosone",
-                 "health", "heightm", "Medication", "mintemp", "networksize", "nostalgia", "selfcontrol", "Sex",
-                 "Site", "Smoking", "socialdiversity", "socialembedded", "stress","weightkg")
+namePilotMT <- c("birthyear", "anxiety", "attachhome", "attachphone", "avghumid", "avgtemp", "avoidance", 
+                 "glucoseplosone", "health", "Medication", "mintemp", "networksize", "nostalgia", 
+                 "selfcontrol", "Sex", "Site", "Smoking", "socialdiversity", "socialembedded", "stress")
 
 # create an empty data frame with colnames
 pilotMT <- setNames(data.frame(matrix(ncol = length(namePilotMT), nrow = nrow(valid.data))), namePilotMT)
 
 # copy the variables that don't need calcuation
-copyName <- c('age','glucoseplosone','Site','Sex','avghumid','mintemp','avgtemp','heightm','weightkg','health','Medication','Smoking')
+copyName <- c('birthyear','glucoseplosone','Site','Sex','avghumid','mintemp','avgtemp','health','Medication','Smoking')
 pilotMT[,copyName] <- valid.data[,copyName]
 
 #### calculate social network indices ####
@@ -254,7 +254,7 @@ print(scontrolAlpha$total)  # 0.878
 
 # also McDonald's omega
 scontrolOmega <- psych::omega(valid.data[,scontrolNames])
-print(scontrolOmega$omega_h) # 0.7135
+print(scontrolOmega$omega.tot) # 0.905
 
 SelfControlScore <- psych::scoreItems(scontrolKeys2,valid.data[,scontrolNames], totals = T, min = 1, max = 5)
 pilotMT$selfcontrol <- SelfControlScore$scores # self control score
@@ -271,7 +271,7 @@ print(stressAlpha$total)  # 0.794
 
 # also McDonald's omega
 stressOmega <- psych::omega(valid.data[,stressNames]) # warnings a loading great than 1 was detected
-print(stressOmega$omega_h) # 0.649
+print(stressOmega$omega.tot) # 0.9252073
 
 stressScore <- psych::scoreItems(stressKeys2,valid.data[,stressNames],totals = T, min = 1, max = 5)
 pilotMT$stress <-stressScore$scores
@@ -280,11 +280,11 @@ pilotMT$stress <-stressScore$scores
 phoneNames <- c( "phone1", "phone2","phone3", "phone4","phone5", "phone6","phone7","phone8","phone9" )
 phoneAlpha <- psych::alpha(valid.data[,phoneNames], 
                             keys=c(1,2,3,4,5,6,7,8,9))  # calculate the alpha coefficient 
-print(phoneAlpha$total)  # std. alpha 0.899
+print(phoneAlpha$total)  # std. alpha 0.8994708
 
 # also McDonald's omega
 phoneOmega <- psych::omega(valid.data[,phoneNames]) # warning: an ultra-Heywood case 1 was detected
-print(phoneOmega$omega_h) # 0.7497
+print(phoneOmega$omega.tot) # 0.9252236
 
 # Datasum$attachphone <- rowSums(valid.data[,phoneNames],na.rm = T) # sum score
 pilotMT$attachphone <- rowSums(valid.data[,phoneNames],na.rm = T) # sum score
@@ -294,11 +294,11 @@ onlineNames <- c( "onlineid1", "onlineid2","onlineid3","onlineid4", "onlineid5",
                  "onlineid9", "onlineid10", "onlineide11")
 onlineAlpha <- psych::alpha(valid.data[,onlineNames], 
                            keys=c(1,2,3,4,5,6,7,8,9,10,11))  # calculate the alpha coefficient 
-print(onlineAlpha$total)  # std. alpha 0.9119
+print(onlineAlpha$total)  # std. alpha 0.9119294
 
 # also McDonald's omega
 onlineOmega <- psych::omega(valid.data[,onlineNames]) 
-print(onlineOmega$omega_h) # 0.699989
+print(onlineOmega$omega.tot) # 0.9449926
 
 pilotMT$onlineid <- rowSums(valid.data[,onlineNames],na.rm = T)/length(onlineNames)
 
@@ -318,7 +318,7 @@ ECRAlpha <- psych::alpha(valid.data[,ECRNames],
                          keys=ECRKeys)  # calculate the alpha coefficient 
 print(ECRAlpha$total)  # std. alpha 0.9674
 ECROmega <- psych::omega(valid.data[,ECRNames]) # warnings
-print(ECROmega$omega_h) # 0.672
+print(ECROmega$omega.tot) #0.9771922
 
 ## score and alpha for ECR Anxiety
 ECRanxietyNames <- c( "ECR1", "ECR2", "ECR3", "ECR4","ECR5", "ECR6", "ECR7", "ECR8", "ECR9", "ECR10", "ECR11",
@@ -331,7 +331,7 @@ ECRanxietyAlpha <- psych::alpha(valid.data[,ECRanxietyNames],
 print(ECRanxietyAlpha$total)  # std. alpha 0.9534
 # also McDonald's omega
 ECRanxietyOmega <- psych::omega(valid.data[,ECRanxietyNames]) 
-print(ECRanxietyOmega$omega_h) # 0.785759
+print(ECRanxietyOmega$omega.tot) # 0.9657642
 
 ECRanxietyScore <- psych::scoreItems(ECRanxietyKeys2,valid.data[,ECRanxietyNames], totals = T, min = 1, max = 7) 
 #Datasum$ECRanxeity <- ECRanxietyScore$scores # average score
@@ -350,7 +350,7 @@ print(ECRavoidanceAlpha$total)  # std. alpha 0.957,
 
 # also McDonald's omega
 ECRavoidanceOmega <- psych::omega(valid.data[,ECRavoidanceNames]) 
-print(ECRavoidanceOmega$omega_h) # 0.818
+print(ECRavoidanceOmega$omega.tot) # 0.818
 
 ECRavoidanceScore <- psych::scoreItems(ECRavoidanceKeys2,valid.data[,ECRavoidanceNames], totals = T, min = 1, max = 7)
 pilotMT$avoidance <- ECRavoidanceScore$scores # sum score
@@ -365,7 +365,7 @@ print(nostalgiaAlpha$total)  # 0.9105, std. alpha 0.9438
 
 # McDonald's omega
 nostalgiaOmega <- psych::omega(valid.data[,nostalgiaNames]) 
-print(nostalgiaOmega$omega_h) # 0.836
+print(nostalgiaOmega$omega.tot) # 0.9679844
 
 nostalgiaScore <- psych::scoreItems(nostalgiaKeys2,valid.data[,nostalgiaNames], totals = T, min = 1, max = 7) ## 
 pilotMT$nostalgia <- nostalgiaScore$scores
@@ -379,7 +379,7 @@ print(nostalgiaAlpha2$total)  # 0.9044, std. alpha 0.952
 
 # McDonald's omega
 nostalgiaOmega2 <- psych::omega(valid.data[,nostalgiaNames_2])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
-print(nostalgiaOmega2$omega_h) # 0.846
+print(nostalgiaOmega2$omega.tot) # 0.9755041
 
 nostalgiaScore2 <- psych::scoreItems(nostalgiaKeys2_2,valid.data[,nostalgiaNames_2], totals = T, min = 1, max = 7) ## 
 pilotMT$nostalgia2 <- nostalgiaScore2$scores
@@ -406,7 +406,7 @@ pilotMT$didf <- didfScore$scores
 
 # McDonald's omega
 didfOmega <- psych::omega(valid.data[,didfNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
-print(didfOmega$omega_h) # 0.727
+print(didfOmega$omega.tot) # 0.9383423
 
 #Datasum$eot <- rowSums(valid.data[,eotNames],na.rm = T)/length(eotNames) # average score
 eotAlpha <-  psych::alpha(valid.data[,eotNames], keys=eotKeys)  # calculate the alpha coefficient of eot
@@ -416,7 +416,7 @@ pilotMT$eot <- eotScore$scores
 
 # McDonald's omega
 eotOmega <- psych::omega(valid.data[,eotNames])  # warnings: a loading greater than abs(1) was detected; An ultra-Heywook case;
-print(eotOmega$omega_h) # 0.351
+print(eotOmega$omega.tot) # 0.7471226
 
 
 ## score and alpha for attachemnt to home
@@ -429,7 +429,7 @@ print(homeAlpha$total)  # std. alpha 0.8826
 
 # McDonald's omega
 homeOmega <- psych::omega(valid.data[,homeNames])  # warnings: An ultra-Heywook case;
-print(homeOmega$omega_h) # 0.68
+print(homeOmega$omega.tot) # 0.9328058
 
 pilotMT$attachhome <- rowSums(valid.data[,homeNames],na.rm = T)/length(homeNames)
 
