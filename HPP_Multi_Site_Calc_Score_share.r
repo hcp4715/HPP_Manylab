@@ -101,26 +101,26 @@ sdAge <- sd(valid.data$age,na.rm = T)
 # define the output file colnames:
 # colnames used for comparing with reported data
 nameMultSite <- c('age','romantic','sex','monogamous',
-                 'health','meds','gluctot',"artgluctot","smoke",
+                 'health','gluctot',"artgluctot","smoke",
                  "cigs", "eatdrink","exercise", 
-                 'avgtemp','AvgHumidity','mintemp','endtime',
-                 'language', "langfamily","Site",'longitude')
+                 'avgtemp','AvgHumidity','mintemp',
+                 'language', "langfamily","Site")
 
 # create an empty data frame with colnames
 sumMultSite <- valid.data[,nameMultSite]
-for (ii in 1:nrow(sumMultSite)){
-        if (is.na(sumMultSite$endtime[ii])){
-                sumMultSite$endtime_r[ii] <- NA
-        }else{
-                sumMultSite$endtime_r[ii] <- period_to_seconds(hms(sumMultSite$endtime[ii]))
-        }
-}
+#for (ii in 1:nrow(sumMultSite)){
+#        if (is.na(sumMultSite$endtime[ii])){
+#                sumMultSite$endtime_r[ii] <- NA
+#        }else{
+#                sumMultSite$endtime_r[ii] <- period_to_seconds(hms(sumMultSite$endtime[ii]))
+#        }
+#}
 
 #sumMultSite$endtime_r <- lubridate::period_to_seconds(hms(sumMultSite$endtime),na.action = na.omit)
 
 describeMulSite1 <- valid.data %>%
-        select(Site,age,romantic,sex,heightm,weightkg,sexpref,monogamous,avgtemp,mintemp, 
-               AvgHumidity,artgluctot,gluctot, Temperature_t1,Temperature_t2,health) %>%
+        select(Site,age,romantic,sex,monogamous,avgtemp,mintemp, 
+               AvgHumidity,artgluctot,gluctot,Temperature_t1,Temperature_t2,health) %>%
         group_by(Site) %>%
         dplyr::summarise(N = length(avgtemp),   # sample size for each site
                   age_m = mean(age,na.rm = T), age_sd = sd(age,na.rm = T),age_NA = sum(is.na(age)),
@@ -702,7 +702,8 @@ describeMulSite2 <- sumMultSite %>%
                   stress_m = mean(stress,na.rm = T),stress_sd = sd(stress,na.rm = T),
                   attachphone_m = mean(attachphone,na.rm = T),attachphone_sd = sd(attachphone,na.rm = T),
                   onlineid_m = mean(onlineid,na.rm = T),onlineid_sd = sd(onlineid,na.rm = T),
-                  anxiety_m = mean(anxiety,na.rm = T), mintemp_sd = sd(anxiety,na.rm = T),
+                  anxiety_m = mean(anxiety,na.rm = T), anxiety_sd = sd(anxiety,na.rm = T),
+                  mintemp_sd = sd(anxiety,na.rm = T),
                   avoidance_m = mean(avoidance,na.rm = T), avoidance_sd = sd(avoidance,na.rm = T),
                   nostalgia_m = mean(nostalgia,na.rm = T),nostalgia_sd = sd(nostalgia,na.rm = T),
                   didf_m = mean(didf,na.rm = T),didf_sd = sd(didf,na.rm = T),
