@@ -9,10 +9,10 @@
 # Affliated to: Neuroimaging Center (NIC), Johannes Gutenberg University Medical Center, 55131 Mainz, Germany;
 # Email: hcp4715@gmail.com
 # 
-# Author      Date       Notes/Changes
+# Author   Date(dd/mm/yy)      Notes/Changes
 # ========   =========   ========
 # C-P. Hu    27/01/18    add more notations
-#
+# C-P. Hu    24/10/18    add KAMF's score
 #
 ### input data ####
 #
@@ -108,16 +108,8 @@ nameMultSite <- c('age','romantic','sex','monogamous',
 
 # create an empty data frame with colnames
 sumMultSite <- valid.data[,nameMultSite]
-#for (ii in 1:nrow(sumMultSite)){
-#        if (is.na(sumMultSite$endtime[ii])){
-#                sumMultSite$endtime_r[ii] <- NA
-#        }else{
-#                sumMultSite$endtime_r[ii] <- period_to_seconds(hms(sumMultSite$endtime[ii]))
-#        }
-#}
 
 #sumMultSite$endtime_r <- lubridate::period_to_seconds(hms(sumMultSite$endtime),na.action = na.omit)
-
 describeMulSite1 <- valid.data %>%
         select(Site,age,romantic,sex,monogamous,avgtemp,mintemp, 
                AvgHumidity,artgluctot,gluctot,Temperature_t1,Temperature_t2,health) %>%
@@ -696,7 +688,7 @@ sitesReliability_reord <- sitesReliability[order(sitesReliability$sites),]
 # calculate the descriptives of each scales
 describeMulSite2 <- sumMultSite %>%
         select(Site,scontrol,stress,attachphone,onlineid,anxiety,avoidance,nostalgia,didf, 
-               eot,attachhome,networksize, socialdiversity, socialembedded) %>%
+               eot,attachhome,kamf,networksize, socialdiversity, socialembedded) %>%
         group_by(Site) %>%
         dplyr::summarise(scontrol_m = mean(scontrol,na.rm = T), scontrol_sd = sd(scontrol,na.rm = T),
                   stress_m = mean(stress,na.rm = T),stress_sd = sd(stress,na.rm = T),
@@ -709,6 +701,7 @@ describeMulSite2 <- sumMultSite %>%
                   didf_m = mean(didf,na.rm = T),didf_sd = sd(didf,na.rm = T),
                   eot_m = mean(eot,na.rm = T), eot_sd = sd(eot,na.rm = T),
                   attachhome_m = mean(attachhome,na.rm = T),attachhome_sd = sd(attachhome,na.rm = T),
+                  kamf_m = mean(kamf,na.rm = T),kamf_sd = sd(kamf,na.rm = T),
                   networksize_m = mean(networksize,na.rm = T),networksize_sd = sd(networksize,na.rm = T),
                   socialdiversity_m = mean(socialdiversity,na.rm = T),socialdiversity_sd = sd(socialdiversity,na.rm = T),
                   socialembedded_m = mean(socialembedded,na.rm = T),socialembedded_sd = sd(socialembedded,na.rm = T))
