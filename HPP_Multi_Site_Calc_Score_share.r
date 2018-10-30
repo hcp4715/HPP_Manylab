@@ -635,7 +635,7 @@ for (i in siteName) {
                 tmpOmega <- psych::omega(tmpdf),
                 warning = function(w) {
                         print(w)
-                        warnSite$Wrong[warnSite$siteName == i] <<- 1
+                        warnSite$homeWarn[warnSite$siteName == i] <<- 1
                 }
         )
         sitesReliability$home_alpha[sitesReliability$sites == i] <-
