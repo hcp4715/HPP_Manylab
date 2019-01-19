@@ -62,7 +62,6 @@
 # ---------------------------------------------------------------------------------------
 # ---------- 1. Load libraries and preparing --------------------------------------------
 # ---------------------------------------------------------------------------------------
-
 rm(list = ls())        # remove all variables in memory
 
 ### Get the directory ofcurrent script (only for r-studio)
@@ -71,6 +70,7 @@ setwd(curWD)
 
 Sys.setlocale("LC_ALL", "English")  # set local encoding to English
 Sys.setenv(LANG = "en")             # set the feedback language to English
+options(digits = 3)                 
 
 ### define a function to install pacakges that not installed.
 pkgTest <- function(x)
@@ -109,6 +109,18 @@ nameMultSite <- c('age','romantic','sex','monogamous','health','gluctot',"artglu
 
 ### create an empty data frame with colnames
 sumMultSite <- data[,nameMultSite]
+
+### create an empty data frame for storing reliability
+siteName <- unique(data$Site)        # get site names
+sitesReliability <- data.frame(sites = siteName, scontrol_alpha = NA)   # create a empty dataframe for reliability
+totalRow <- data.frame(sites = 'Total', scontrol_alpha = NA)            # add a row for total data
+sitesReliability <- rbind(sitesReliability,totalRow)
+sitesReliability$sites <- as.character(sitesReliability$sites)
+
+siteName <- as.character(sitesReliability$sites)
+
+warnSite <- data.frame(sitesReliability$sites)  # record which site have warning for omega estimation
+colnames(warnSite) <- 'siteName'
 
 
 # ---------------------------------------------------------------------------------------
@@ -254,16 +266,6 @@ SelfControlScore <- psych::scoreItems(scontrolNames,data[,scontrolNames], totals
 sumMultSite$scontrol <- SelfControlScore$scores # self control score
 
 #### Reliability for each site for self control
-siteName <- unique(data$Site)        # get site names
-sitesReliability <- data.frame(sites = siteName, scontrol_alpha = NA)   # create a empty dataframe for reliability
-totalRow <- data.frame(sites = 'Total', scontrol_alpha = NA)            # add a row for total data
-sitesReliability <- rbind(sitesReliability,totalRow)
-sitesReliability$sites <- as.character(sitesReliability$sites)
-
-siteName <- as.character(sitesReliability$sites)
-
-warnSite <- data.frame(sitesReliability$sites)  # record which site have warning for omega estimation
-colnames(warnSite) <- 'siteName'
 
 ### calculate the reliability for each site and total data
 for (i in siteName) {
@@ -656,6 +658,110 @@ for (i in siteName) {
         sitesReliability$home_omega_t[sitesReliability$sites == i] <-
                 as.numeric(tmpOmega$omega.tot) # chose Omega_H
 }
+
+######################################
+####### STRAQ-1         ##############
+######################################
+
+### score and alpha for STRAQ-1
+straqNames_all  <- paste('STRAQ',c(1:57), sep = '_')
+
+# High Temperature Sensitivity
+# STRAQ_5,STRAQ_4,STRAQ_2,STRAQ_16,STRAQ_14,STRAQ_11,STRAQ_10
+hiTempSensNames <- paste('STRAQ', c(5,4,2,16,14,11,10), sep = '_')
+hiTempSensKeys  <- c(-1,-2,3,4,5,6,7)
+
+# Social Thermoregulation
+# STRAQ_19,STRAQ_20,STRAQ_44,STRAQ_48,STRAQ_49
+socThermNames   <- paste('STRAQ', c(19,20,44,48,49), sep = '_')
+socThermKeys    <- c(1,2,3,4,5)
+
+# Unified Solitary Thermoregulation
+# STRAQ_45,STRAQ_1,STRAQ_15,STRAQ_9,STRAQ_6; STRAQ_52,STRAQ_55,STRAQ_54
+soliThermNames<- paste('STRAQ', c(45,1,15,9,6,52,55,54), sep = '_')
+soliThermKeys <- c(-1,-2, 3,4,5,6,7,8)
+
+# Risk Avoidance
+# STRAQ_41,STRAQ_40,STRAQ_43
+riskAvdNames    <- paste('STRAQ', c(41,40,43), sep = '_')
+riskAvdKeys     <- c(1,2,3)
+tmp <- psych::omega(data[,riskAvdNames])
+
+# All items in final questionnaire
+straq_vNames    <- c(hiTempSensNames,socThermNames,soliThermNames,riskAvdNames)
+straq_vKeys     <- c(-1,-2,3,4,5,6,7,
+                     8,9,10,11,12,
+                     -13,-14, 15,16,17,18,19,10,
+                     21,22,23)
+
+### caculate the score
+hiTempScore <- psych::scoreItems(hiTempSensKeys,data[,hiTempSensNames],min = 1, max = 5)  ## 
+sumMultSite$hiTemp <- hiTempScore$scores
+socThermScore <- psych::scoreItems(socThermKeys,data[,socThermNames],min = 1, max = 5)    ## 
+sumMultSite$socTherm <- socThermScore$scores
+soliThermScore <- psych::scoreItems(soliThermKeys,data[,soliThermNames],min = 1, max = 5) ## 
+sumMultSite$soliTherm<- soliThermScore$scores
+riskAvdScore <- psych::scoreItems(riskAvdKeys,data[,riskAvdNames],min = 1, max = 5)       ## 
+sumMultSite$riskAvd <- riskAvdScore$scores
+
+subscaleNames <- c('hiTempSens','socTherm','soliTherm','riskAvd','straq_v')  # for later loop of subscale and whole scale
+### Reliability
+for (j in subscaleNames) {                       
+        tmpName = paste(j,'Names',sep = '')
+        tmpName = eval(as.symbol(tmpName))  # call the variable use the tmpName 
+        tmpKeys = paste(j,'Keys',sep = '')
+        tmpKeys = eval(as.symbol(tmpKeys))
+        alphaName = paste(j,'Alpha',sep = '')
+        omega_hName = paste(j,'omega_h',sep = '')
+        omega_tName = paste(j,'omega_t',sep = '')
+        
+        for (i in siteName) {
+                if (i == 'Total') {
+                        tmpdf <- data[, tmpName]
+                } else {
+                        tmpdf <- data[data$Site == i, tmpName]
+                }
+                #tmpAlpha <- psych::alpha(tmpdf, keys = tmpKeys)
+                #tryCatch(
+                tmpOmega <- psych::omega(tmpdf)
+                #        warning = function(w) {
+                #                print(w)
+                #                warnSite[warnSite$siteName == i,j] <<- 1
+                #        }
+                #)
+                sitesReliability[sitesReliability$sites == i,c(alphaName)] <-
+                        as.numeric(tmpOmega$alpha)      # chose the Standard alpha
+                sitesReliability[sitesReliability$sites == i,c(omega_hName)] <-
+                        as.numeric(tmpOmega$omega_h)    # chose Omega_H
+                sitesReliability[sitesReliability$sites == i,c(omega_tName)] <-
+                        as.numeric(tmpOmega$omega.tot)  # chose Omega_H
+        }
+}
+
+#Internal Consistencies by Language
+#for (i in 1:length(siteName[1:15])){
+#        print(levels(factor(data$siteName))[i])
+#        print("Omega total")
+#        print(omega(subset(data, Site ==levels(factor(data$Site))[i], select=c(STRAQ_5,STRAQ_4,STRAQ_2,STRAQ_16,STRAQ_14,STRAQ_11,STRAQ_10)))$omega.tot)  
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_19,STRAQ_20,STRAQ_44,STRAQ_48,STRAQ_49)))$omega.tot)  
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_45,STRAQ_1,STRAQ_15,STRAQ_9,STRAQ_6)))$omega.tot)  
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_41,STRAQ_40,STRAQ_43)))$omega.tot)  
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_52,STRAQ_55,STRAQ_54)))$omega.tot)  
+        
+#        print("Omega Hierarchical")
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_5,STRAQ_4,STRAQ_2,STRAQ_16,STRAQ_14,STRAQ_11,STRAQ_10)))$omega_h)  
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_19,STRAQ_20,STRAQ_44,STRAQ_48,STRAQ_49)))$omega_h)  
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_45,STRAQ_1,STRAQ_15,STRAQ_9,STRAQ_6)))$omega_h)  
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_41,STRAQ_40,STRAQ_43)))$omega_h)  
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_52,STRAQ_55,STRAQ_54)))$omega_h)  
+        
+#        print("Alpha")
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_5,STRAQ_4,STRAQ_2,STRAQ_16,STRAQ_14,STRAQ_11,STRAQ_10)))$alpha)
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_19,STRAQ_20,STRAQ_44,STRAQ_48,STRAQ_49)))$alpha)
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_45,STRAQ_1,STRAQ_15,STRAQ_9,STRAQ_6)))$alpha)
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_41,STRAQ_40,STRAQ_43)))$alpha)
+#        print(omega(subset(data, Site==levels(factor(data$Site))[i], select=c(STRAQ_52,STRAQ_55,STRAQ_54)))$alpha)
+#}
 
 ######################################
 ############### KAMF #################
